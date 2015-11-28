@@ -1,0 +1,209 @@
+syntax = "proto3";
+
+package replica;
+
+service GrpcReplica {
+  rpc Ping(Beacon) returns (Empty) {}
+  rpc ReplyPing(BeaconReply) returns (Empty) {}
+  rpc Propose(Proposal) returns (Empty) {}
+  rpc ReplyPropose(ProposalReply) returns (Empty) {}
+  rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
+  rpc Read(Key) returns (Empty) {}
+  rpc ReplyRead(Value) returns (Empty) {}
+  rpc ProposeAndRead(ProposalRead) returns (Empty) {}
+  rpc ReplyProposeAndRead(ProposalReadReply) returns (Empty) {}
+  rpc Prepare(Preparation) returns (Empty) {}
+  rpc ReplyPrepare(PreparationReply) returns (Empty) {}
+  rpc TryPreAccept(TryPreAcceptance) returns (Empty) {}
+  rpc ReplyTryPreAccept(TryPreAcceptanceReply) returns (Empty) {}
+  rpc PreAccept(PreAcceptance) returns (Empty) {}
+  rpc ReplyPreAccept(PreAcceptanceReply) returns (Empty) {}
+  rpc PreAcceptOK(PreAcceptanceOk) returns (Empty) {}
+  rpc Accept(Acceptance) returns (Empty) {}
+  rpc ReplyAccept(AcceptanceReply) returns (Empty) {}
+  rpc Commit(TryCommit) returns (Empty) {}
+  rpc CommitShort(TryCommitShort) returns (Empty) {}
+}
+
+enum Status {
+  NONE = 0;
+  PREACCEPTED = 1;
+  PREACCEPTED_EQ = 2;
+  ACCEPTED = 3;
+  COMMITTED = 4;
+  EXECUTED = 5;
+}
+
+message Empty {}
+
+message Command {
+  enum Operation {
+   NOP = 0;
+   PUT = 1;
+   GET = 2;
+   DELETE = 3;
+   RLOCK = 4;
+   WLOCK = 5; 
+  }
+  Operation operation = 1;
+  string key = 2;
+  string value = 3; 
+}
+
+message Proposal {
+  int32 command_id = 1;
+  Command command = 2;
+  int64 timestamp = 3;
+  int32 client = 4;   
+}
+
+message ProposalReply {
+  bool ok = 1;
+  int32 command = 2;
+  int32 client = 3;
+}
+
+message ProposalReplyTS {
+  bool ok = 1;
+  int32 command = 2;
+  string value = 3;
+  int64 timestamp = 4;
+  int32 client = 5;
+}
+
+message Key {
+  int32 command = 1;
+  string key = 2;
+}
+
+message Value {
+  int32 command = 1;
+  string value = 2;
+}
+
+message ProposalRead {
+  int32 command_id = 1;
+  Command command = 2;
+  string key = 3;
+}
+
+message ProposalReadReply {
+  int32 command = 1;
+  int32 ok = 2;
+  string value = 3;
+}
+
+message Beacon {
+  int32 replica = 2;
+  uint64 timestamp = 1;
+}
+
+message BeaconReply {
+  uint64 timestamp = 1;
+  int32 replica = 2;
+}
+
+message PingArgs {
+  int32 act_as_leader = 1;
+}
+
+message Preparation {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  int32 ballot = 4; 
+}
+
+message PreparationReply {
+  int32 acceptor = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  bool ok = 4;
+  int32 ballot = 5;
+  Status status = 6;
+  repeated Command commands = 7;
+  int32 seq = 8;
+  repeated int32 deps = 9 [packed=true];  
+}
+
+message PreAcceptance {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  int32 ballot = 4;
+  repeated Command commands = 5;
+  int32 seq = 6;
+  repeated int32 deps = 7 [packed=true];
+}
+
+message PreAcceptanceReply {
+  int32 replica = 1;
+  int32 instance = 2;
+  bool ok = 3;
+  int32 ballot = 4;
+  int32 seq = 5;
+  repeated int32 deps = 6 [packed=true];
+  repeated int32 committed_deps = 7 [packed=true];
+}
+
+message PreAcceptanceOk {
+  int32 instance = 1;
+}
+
+message Acceptance {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  int32 ballot = 4;
+  int32 count = 5;
+  int32 seq = 6;
+  repeated int32 deps = 7 [packed=true];
+}
+
+message AcceptanceReply {
+  int32 replica = 1;
+  int32 instance = 2;
+  bool ok = 3;
+  int32 ballot = 4;
+}
+
+message TryCommit {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  repeated Command commands = 4;
+  int32 seq = 5;
+  repeated int32 deps = 6 [packed=true];
+}
+
+message TryCommitShort {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  int32 count = 4;
+  int32 seq = 5;
+  repeated int32 deps = 6 [packed=true];
+}
+
+message TryPreAcceptance {
+  int32 leader = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  int32 ballot = 4;
+  repeated Command commands = 5;
+  int32 seq = 6;
+  repeated int32 deps = 7 [packed=true];
+}
+
+message TryPreAcceptanceReply {
+  int32 acceptor = 1;
+  int32 replica = 2;
+  int32 instance = 3;
+  bool ok = 4;
+  int32 ballot = 5;
+  int32 conflict_replica = 6;
+  int32 conflict_instance = 7;
+  Status conflict_status = 8;
+}
+
+

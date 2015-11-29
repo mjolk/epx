@@ -2,6 +2,7 @@ package replica
 
 import (
 	"errors"
+	log "github.com/Sirupsen/logrus"
 	"time"
 )
 
@@ -16,19 +17,29 @@ func (r *epaxosReplica) stopAdapting() {
 var conflicted, weird, slow, happy int
 
 func Start(id int32, port string, addr []string) (err error) {
+	log.WithFields(log.Fields{
+		"replicaId": id,
+		"port":      port,
+	}).Info("Started replica")
 	var cluster Cluster
 	if cluster, err = NewCluster(addr); err != nil {
 		return errors.New("need at least three replicas")
 	}
+
 	cluster.Start()
 
 	replica := NewEpaxosReplica(id, port, cluster)
 	replica.Start()
+
 	return nil
 }
 
 func (r *epaxosReplica) run() {
 	clusterSize := r.cluster.Len()
+	log.WithFields(log.Fields{
+		"cluster": clusterSize,
+		"replica": r.id,
+	}).Info("running replica")
 
 	if r.exec {
 		go r.executeCommands()
@@ -55,21 +66,22 @@ func (r *epaxosReplica) run() {
 		go r.stopAdapting()
 	}
 
-	onOffProposeChan := r.proposals
+	proposalSwitch := r.proposals
 
 	for {
 
 		select {
 
-		case proposal := <-onOffProposeChan:
+		case proposal := <-proposalSwitch:
 			//got a Propose from a client
 			r.propose(proposal)
 			//deactivate new proposals channel to prioritize the handling of other protocol messages,
 			//and to allow commands to accumulate for batching
+			proposalSwitch = nil
 
 		case <-fastClock:
 			//activate new proposals channel
-			onOffProposeChan = r.proposals
+			proposalSwitch = r.proposals
 
 		case preparation := <-r.preparations:
 			//got a Prepare message
@@ -106,19 +118,15 @@ func (r *epaxosReplica) run() {
 		case acceptanceReply := <-r.acceptanceReplies:
 			//got an Accept reply
 			r.acceptReply(acceptanceReply)
-			break
 
 		case tryPreAcceptance := <-r.tryPreAcceptances:
 			r.tryPreAccept(tryPreAcceptance)
-			break
 
 		case tryPreAcceptanceReply := <-r.tryPreAcceptanceReplies:
 			r.tryPreAcceptReply(tryPreAcceptanceReply)
-			break
 
 		case beacon := <-r.beacons:
 			r.cluster.ReplyPing(r.id, beacon)
-			break
 
 		case <-slowClock:
 			if r.beacon {
@@ -129,13 +137,15 @@ func (r *epaxosReplica) run() {
 					r.cluster.Ping(q)
 				}
 			}
-			break
 			/*	case <-r.OnClientConnect:
 				log.Printf("weird %d; conflicted %d; slow %d; happy %d\n", weird, conflicted, slow, happy)
 				weird, conflicted, slow, happy = 0, 0, 0, 0*/
 
 		case iid := <-r.recoveryInstances:
 			r.startRecoveryForInstance(iid.replica, iid.instance)
+		case <-r.shutdown:
+			return
+		default:
 		}
 	}
 }

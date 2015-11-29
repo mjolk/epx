@@ -2,11 +2,11 @@ package replica
 
 import (
 	"errors"
+	log "github.com/Sirupsen/logrus"
 	"github.com/mjolk/epaxos_grpc/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/grpclog"
-	"time"
+	//	"google.golang.org/grpc/credentials"
 )
 
 type Cluster interface {
@@ -34,11 +34,6 @@ type Cluster interface {
 	TryPreAccept(int32, *TryPreAcceptance)
 }
 
-type connectionTry struct {
-	tries   int
-	replica RemoteReplica
-}
-
 type cluster struct {
 	replicas     []RemoteReplica
 	badReplicas  []RemoteReplica
@@ -56,35 +51,13 @@ func (c *cluster) Len() int {
 //todo add timeout
 func (c *cluster) Start() {
 	replicaCount := len(c.replicas)
-	repChan := make(chan *connectionTry)
-	errChan := make(chan *connectionTry)
+	doneChan := make(chan int, replicaCount)
+	done := 0
 	for _, replica := range c.replicas {
-		go c.connect(&connectionTry{0, replica}, repChan, errChan)
+		go c.connect(replica, doneChan)
 	}
-	ticker := time.NewTicker(time.Second * 2).C
-	retries := make([]*connectionTry, replicaCount)
-	for {
-		select {
-		case fail := <-errChan:
-			fail.tries++
-			if fail.tries < 3 {
-				retries = append(retries, fail)
-			} else {
-				c.badReplicas = append(c.badReplicas, fail.replica)
-			}
-		case good := <-repChan:
-			c.replicas = append(c.replicas, good.replica)
-		case <-ticker:
-			if len(retries) > 0 {
-				for _, retry := range retries {
-					go c.connect(retry, repChan, errChan)
-				}
-			}
-		default:
-			if (len(c.replicas) + len(c.badReplicas)) == replicaCount {
-				return
-			}
-		}
+	for done < replicaCount {
+		done += <-doneChan
 	}
 }
 
@@ -115,12 +88,12 @@ func NewCluster(addrs []string) (Cluster, error) {
 	if len(addrs) < 2 {
 		return nil, errors.New("Need at least 3 peers")
 	}
-	for _, addr := range addrs {
-		replica := NewRemoteReplica(addr)
+	for i, addr := range addrs {
+		replica := NewRemoteReplica(int32(i), addr)
 		cluster.replicas = append(cluster.replicas, replica)
 	}
 	cluster.replicaOrder = make([]int32, cnt)
-	return Cluster(cluster), nil
+	return cluster, nil
 }
 
 func (c *cluster) InitReplicaOrder(r Replica) {
@@ -158,16 +131,19 @@ func (c *cluster) UpdateReplicaOrder(r Replica, quorum []int32) {
 	c.replicaOrder = aux
 }
 
-func (c *cluster) connect(try *connectionTry, repChan chan<- *connectionTry, errChan chan<- *connectionTry) {
+func (c *cluster) connect(replica RemoteReplica, done chan<- int) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
-	conn, err := grpc.Dial(try.replica.Addr(), opts...)
+	//creds, err := credentials.NewClientTLSFromFile("mjolk.be.pem", "mjolk.be")
+	//if err != nil {
+	//	log.Fatalf("Failed to create TLS credentials")
+	//}
+	opts = append(opts, grpc.WithInsecure() /*grpc.WithTransportCredentials(creds)*/)
+	conn, err := grpc.Dial(replica.Addr(), opts...)
 	if err != nil {
-		grpclog.Fatalf("fail to dial: %v", err)
-		errChan <- try
+		log.Fatalf("fail to dial")
 	}
-	try.replica.SetClient(NewGrpcReplicaClient(conn))
-	repChan <- try
+	replica.SetClient(NewGrpcReplicaClient(conn))
+	done <- 1
 }
 
 func (c *cluster) PreAccept(thrifty bool, preAccept *PreAcceptance) {
@@ -266,7 +242,12 @@ func (c *cluster) ReplyTryPreAccept(replicaId int32, reply *TryPreAcceptanceRepl
 }
 
 func (c *cluster) Ping(replicaId int32) {
-	c.Replica(replicaId).Ping(context.Background(), &Beacon{replicaId, rdtsc.Cputicks()})
+	_, err := c.Replica(replicaId).Ping(context.Background(), &Beacon{replicaId, rdtsc.Cputicks()})
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Info("error ping")
+	}
 }
 
 func (c *cluster) ReplyPing(replicaId int32, beacon *Beacon) {

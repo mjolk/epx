@@ -1,6 +1,7 @@
 package replica
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/mjolk/epaxos_grpc/bloomfilter"
 	"golang.org/x/net/context"
 	"math"
@@ -104,6 +105,9 @@ type epaxosReplica struct {
 //todo fix Key loopup hash map
 func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 	replicaCnt := cluster.Len()
+	log.WithFields(log.Fields{
+		"cluster": replicaCnt,
+	}).Info("creating replica")
 	ereplica := &epaxosReplica{
 		replica:                 NewReplica(id, address, cluster),
 		preparations:            make(chan *Preparation, CHAN_BUFFER_SIZE),

@@ -1,10 +1,11 @@
 package replica
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/mjolk/epaxos_grpc/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/grpclog"
+	//"google.golang.org/grpc/credentials"
 	"net"
 )
 
@@ -123,10 +124,11 @@ func NewReplica(id int32, address string, cluster Cluster) *replica {
 		beacons:   make(chan *Beacon, CHAN_BUFFER_SIZE),
 		proposals: make(chan *Proposal, CHAN_BUFFER_SIZE),
 		beacon:    true,
-		exec:      true,
-		thrifty:   true,
+		exec:      false,
+		thrifty:   false,
 		durable:   false,
 		dreply:    false,
+		ewma:      make([]float64, replicaCnt),
 	}
 	for i := 0; i < replicaCnt; i++ {
 		replica.ewma[i] = 0.0
@@ -134,8 +136,8 @@ func NewReplica(id int32, address string, cluster Cluster) *replica {
 	return replica
 }
 
-func NewRemoteReplica(address string) RemoteReplica {
-	return &remoteReplica{address: address}
+func NewRemoteReplica(id int32, address string) RemoteReplica {
+	return &remoteReplica{id: id, address: address}
 }
 
 func (r *remoteReplica) SetClient(client GrpcReplicaClient) {
@@ -175,22 +177,25 @@ func (r *remoteReplica) IsDurable() bool {
 }
 
 func (r *epaxosReplica) Start() {
-	lis, err := net.Listen("tcp", r.Addr())
+	log.WithFields(log.Fields{
+		"addr": r.address,
+	}).Info("setting up server")
+	lis, err := net.Listen("tcp", r.address)
 	if err != nil {
-		grpclog.Fatalf("failed to listen: %v", err)
+		panic(err)
 	}
 	var opts []grpc.ServerOption
-	/*if *tls {
-		creds, err := credentials.NewServerTLSFromFile(*certFile, *keyFile)
-		if err != nil {
-			grpclog.Fatalf("Failed to generate credentials %v", err)
-		}
-		opts = []grpc.ServerOption{grpc.Creds(creds)}
-	}*/
+	//	creds, err := credentials.NewServerTLSFromFile("mjolk.be.crt", "mjolk.be.key")
+	//	if err != nil {
+	//		panic("Failed to generate credentials %v")
+	//	}
+	//	opts = []grpc.ServerOption{grpc.Creds(creds)}
 	grpcServer := grpc.NewServer(opts...)
 	RegisterGrpcReplicaServer(grpcServer, r)
-	grpcServer.Serve(lis)
-	r.run()
+	go r.run()
+	if err := grpcServer.Serve(lis); err != nil {
+		panic(err)
+	}
 }
 
 func (r *replica) Store() Store {
@@ -252,6 +257,9 @@ func (r *replica) Ewma() []float64 {
 }
 
 func (r *replica) Ping(ctx context.Context, beacon *Beacon) (*Empty, error) {
+	log.WithFields(log.Fields{
+		"ts": beacon.Timestamp,
+	}).Info("received ping")
 	r.beacons <- beacon
 	return &Empty{}, nil
 }

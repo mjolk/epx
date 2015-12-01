@@ -11,9 +11,11 @@ func (r *epaxosReplica) propose(proposal *Proposal) {
 	batchSize := len(r.proposals)
 	if batchSize > MAX_BATCH {
 		batchSize = MAX_BATCH
+	} else if batchSize == 0 {
+		batchSize = 1
 	}
 
-	instNo := r.crtInstance[r.Id()]
+	instNo := r.crtInstance[r.id]
 	r.crtInstance[r.id]++
 
 	cmds := make([]*Command, batchSize)
@@ -35,7 +37,7 @@ func (r *epaxosReplica) startPhase1(replica int32, instance int32, ballot int32,
 	//init command attributes
 
 	seq := int32(0)
-	var deps []int32
+	deps := make([]int32, DS)
 	replicaCnt := r.cluster.Len()
 	for q := 0; q < replicaCnt; q++ {
 		deps[q] = -1

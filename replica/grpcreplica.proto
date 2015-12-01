@@ -8,8 +8,6 @@ service GrpcReplica {
   rpc Propose(Proposal) returns (Empty) {}
   rpc ReplyPropose(ProposalReply) returns (Empty) {}
   rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
-  rpc Read(Key) returns (Empty) {}
-  rpc ReplyRead(Value) returns (Empty) {}
   rpc ProposeAndRead(ProposalRead) returns (Empty) {}
   rpc ReplyProposeAndRead(ProposalReadReply) returns (Empty) {}
   rpc Prepare(Preparation) returns (Empty) {}
@@ -69,16 +67,6 @@ message ProposalReplyTS {
   string value = 3;
   int64 timestamp = 4;
   int32 client = 5;
-}
-
-message Key {
-  int32 command = 1;
-  string key = 2;
-}
-
-message Value {
-  int32 command = 1;
-  string value = 2;
 }
 
 message ProposalRead {

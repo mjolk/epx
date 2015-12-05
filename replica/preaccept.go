@@ -5,6 +5,9 @@ package replica
                             PHASE 1
 
 ***********************************************************************/
+import (
+	log "github.com/Sirupsen/logrus"
+)
 
 func (r *epaxosReplica) preAccept(preAccept *PreAcceptance) {
 	replicaCnt := r.cluster.Len()
@@ -45,9 +48,14 @@ func (r *epaxosReplica) preAccept(preAccept *PreAcceptance) {
 		status = Status_PREACCEPTED
 	}
 
+	log.WithFields(log.Fields{
+		"status": status,
+	}).Info("STATUS PREACCEPT")
+
 	if inst != nil {
 		if preAccept.Ballot < inst.ballot {
-			r.cluster.ReplyPreAccept(preAccept.Leader,
+			log.Info("REPLYPREACCEPT")
+			go r.cluster.ReplyPreAccept(preAccept.Leader,
 				&PreAcceptanceReply{
 					preAccept.Replica,
 					preAccept.Instance,
@@ -88,11 +96,12 @@ func (r *epaxosReplica) preAccept(preAccept *PreAcceptance) {
 		r.latestCPInstance = preAccept.Instance
 
 		//discard dependency hashtables
-		//hashtablesr.clearHashtables()
+		r.clearHashtables()
 	}
 
 	if changed || uncommittedDeps || preAccept.Replica != preAccept.Leader || !IsInitialBallot(preAccept.Ballot) {
-		r.cluster.ReplyPreAccept(preAccept.Leader,
+		log.Info("replypreaccept")
+		go r.cluster.ReplyPreAccept(preAccept.Leader,
 			&PreAcceptanceReply{
 				preAccept.Replica,
 				preAccept.Instance,
@@ -102,7 +111,8 @@ func (r *epaxosReplica) preAccept(preAccept *PreAcceptance) {
 				deps,
 				r.committedUpTo})
 	} else {
-		r.cluster.PreAcceptanceOk(preAccept.Leader, &PreAcceptanceOk{preAccept.Instance})
+		log.Info("precceptanceOK")
+		go r.cluster.PreAcceptanceOk(preAccept.Leader, &PreAcceptanceOk{preAccept.Instance})
 	}
 }
 
@@ -112,10 +122,12 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 
 	if inst.status != Status_PREACCEPTED {
 		// we've moved on, this is a delayed reply
+		log.Info("Delayed reply RETURN")
 		return
 	}
 
 	if inst.ballot != pareply.Ballot {
+		log.Info("RETURN")
 		return
 	}
 
@@ -128,11 +140,13 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 		if inst.lb.nacks >= cLen/2 {
 			// TODO
 		}
+		log.Info("RETURN")
 		return
 	}
 
 	inst.lb.preAcceptOKs++
 
+	log.Info("mergeattributes*****")
 	var equal bool
 	inst.seq, inst.deps, equal = r.mergeAttributes(inst.seq, inst.deps, pareply.Seq, pareply.Deps)
 	if (cLen <= 3 && !r.thrifty) || inst.lb.preAcceptOKs > 1 {
@@ -163,20 +177,26 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 		if inst.lb.clientProposals != nil && !r.dreply {
 			// give clients the all clear
 			cnt := len(inst.lb.clientProposals)
+			log.WithFields(log.Fields{
+				"proposals": cnt,
+			}).Info("Sending poposal reply")
 			for i := 0; i < cnt; i++ {
-				r.cluster.ReplyProposeTS(
+				c := i
+				go r.cluster.ReplyProposeTS(
 					&ProposalReplyTS{
 						true,
-						inst.lb.clientProposals[i].CommandId,
+						inst.lb.clientProposals[c].CommandId,
 						NIL,
-						inst.lb.clientProposals[i].Timestamp,
-						inst.lb.clientProposals[i].Client})
+						inst.lb.clientProposals[c].Timestamp})
 			}
 		}
 
 		//	r.recordInstanceMetadata(inst)
 		//	r.sync() //is this necessary here?
 
+		log.WithFields(log.Fields{
+			"replica": r.id,
+		}).Info("bcastcommit")
 		r.bcastCommit(pareply.Replica, pareply.Instance, inst.commands, inst.seq, inst.deps)
 	} else if inst.lb.preAcceptOKs >= cLen/2 {
 		if !allCommitted {
@@ -186,6 +206,7 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 		inst.status = Status_ACCEPTED
 		r.bcastAccept(pareply.Replica, pareply.Instance, inst.ballot, int32(len(inst.commands)), inst.seq, inst.deps)
 	}
+	log.Info("SLOW")
 	//TODO: take the slow path if messages are slow to arrive
 }
 
@@ -194,10 +215,12 @@ func (r *epaxosReplica) preAcceptOK(pareply *PreAcceptanceOk) {
 
 	if inst.status != Status_PREACCEPTED {
 		// we've moved on, this is a delayed reply
+		log.Info("RETURN")
 		return
 	}
 
 	if !IsInitialBallot(inst.ballot) {
+		log.Info("RETURN")
 		return
 	}
 
@@ -225,20 +248,26 @@ func (r *epaxosReplica) preAcceptOK(pareply *PreAcceptanceOk) {
 		if inst.lb.clientProposals != nil && !r.dreply {
 			// give clients the all clear
 			pLen := len(inst.lb.clientProposals)
+			log.WithFields(log.Fields{
+				"proposals": pLen,
+			}).Info("Sending poposal reply")
 			for i := 0; i < pLen; i++ {
-				r.cluster.ReplyProposeTS(
+				c := i
+				go r.cluster.ReplyProposeTS(
 					&ProposalReplyTS{
 						true,
-						inst.lb.clientProposals[i].CommandId,
+						inst.lb.clientProposals[c].CommandId,
 						NIL,
-						inst.lb.clientProposals[i].Timestamp,
-						inst.lb.clientProposals[i].Client})
+						inst.lb.clientProposals[c].Timestamp})
 			}
 		}
 
 		//		r.recordInstanceMetadata(inst)
 		//		r.sync() //is this necessary here?
 
+		log.WithFields(log.Fields{
+			"replica": r.id,
+		}).Info("bcastcommit")
 		r.bcastCommit(r.id, pareply.Instance, inst.commands, inst.seq, inst.deps)
 	} else if inst.lb.preAcceptOKs >= cLen/2 {
 		if !allCommitted {
@@ -246,7 +275,9 @@ func (r *epaxosReplica) preAcceptOK(pareply *PreAcceptanceOk) {
 		}
 		slow++
 		inst.status = Status_ACCEPTED
+		log.Info("bcastaccept")
 		r.bcastAccept(r.id, pareply.Instance, inst.ballot, int32(len(inst.commands)), inst.seq, inst.deps)
 	}
+	log.Info("SLOW")
 	//TODO: take the slow path if messages are slow to arrive
 }

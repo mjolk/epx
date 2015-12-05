@@ -52,13 +52,11 @@ message Proposal {
   int32 command_id = 1;
   Command command = 2;
   int64 timestamp = 3;
-  int32 client = 4;   
 }
 
 message ProposalReply {
   bool ok = 1;
   int32 command = 2;
-  int32 client = 3;
 }
 
 message ProposalReplyTS {
@@ -66,7 +64,6 @@ message ProposalReplyTS {
   int32 command = 2;
   string value = 3;
   int64 timestamp = 4;
-  int32 client = 5;
 }
 
 message ProposalRead {

@@ -5,7 +5,7 @@ package replica
 ************************************/
 
 import (
-	"github.com/mjolk/epaxos_grpc/bloomfilter"
+	"github.com/mjolk/epx/bloomfilter"
 	"sort"
 	"time"
 )
@@ -156,8 +156,7 @@ func (r *epaxosReplica) strongconnect(v *Instance, index *int) bool {
 							true,
 							w.lb.clientProposals[idx].CommandId,
 							val,
-							w.lb.clientProposals[idx].Timestamp,
-							w.lb.clientProposals[idx].Client})
+							w.lb.clientProposals[idx].Timestamp})
 				}
 			}
 			w.status = Status_EXECUTED

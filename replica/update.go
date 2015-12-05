@@ -28,7 +28,7 @@ func (r *epaxosReplica) updateAttributes(cmds []*Command, seq int32, deps []int3
 			continue
 		}
 		for _, cmd := range cmds {
-			if d, present := (r.conflicts[q])[cmd.Key]; present {
+			if d, present := r.conflicts[q][cmd.Key]; present {
 				if d > deps[q] {
 					deps[q] = d
 					if seq <= r.instanceSpace[q][d].seq {

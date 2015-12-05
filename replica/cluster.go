@@ -3,7 +3,7 @@ package replica
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
-	"github.com/mjolk/epaxos_grpc/rdtsc"
+	"github.com/mjolk/epx/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	//	"google.golang.org/grpc/credentials"
@@ -22,22 +22,59 @@ type Cluster interface {
 	Commit(bool, *TryCommit, *TryCommitShort)
 	Accept(bool, *Acceptance)
 	SetReplicaOrder([]float64)
+	Propose(int32, *Proposal)
 	ReplyProposeTS(*ProposalReplyTS)
 	ReplyPreAccept(int32, *PreAcceptanceReply)
 	PreAcceptanceOk(int32, *PreAcceptanceOk)
 	ReplyAccept(int32, *AcceptanceReply)
 	ReplyPrepare(int32, *PreparationReply)
 	ReplyTryPreAccept(int32, *TryPreAcceptanceReply)
-	Ping(int32)
-	ReplyPing(int32, *Beacon)
+	Ping(*Beacon)
+	ReplyPing(int32, *BeaconReply)
 	Prepare(bool, int32, *Preparation)
 	TryPreAccept(int32, *TryPreAcceptance)
+	Client(string)
+}
+
+type client struct {
+	address string
+	GrpcProposeClient
+}
+
+func NewClient(addr string) *client {
+	c := new(client)
+	c.address = addr
+	var opts []grpc.DialOption
+	//var sn string
+	/*if serverHostOverride != "" {
+		sn = serverHostOverride
+	}
+	var creds credentials.TransportAuthenticator
+	if *caFile != "" {
+		var err error
+		creds, err = credentials.NewClientTLSFromFile("mjolk.be.pem", sn)
+		if err != nil {
+			log.Fatalf("Failed to create TLS credentials %v", err)
+		}
+	} else {
+		creds = credentials.NewClientTLSFromCert(nil, sn)
+	}
+	opts = append(opts, grpc.WithTransportCredentials(creds))*/
+	opts = append(opts, grpc.WithInsecure())
+	conn, err := grpc.Dial(c.address, opts...)
+	if err != nil {
+		log.Fatalf("fail to dial: %v", err)
+	}
+	c.GrpcProposeClient = NewGrpcProposeClient(conn)
+	return c
+
 }
 
 type cluster struct {
 	replicas     []RemoteReplica
 	badReplicas  []RemoteReplica
 	replicaOrder []int32
+	client       GrpcProposeClient
 }
 
 func (c *cluster) Replicas() []RemoteReplica {
@@ -94,6 +131,10 @@ func NewCluster(addrs []string) (Cluster, error) {
 	}
 	cluster.replicaOrder = make([]int32, cnt)
 	return cluster, nil
+}
+
+func (c *cluster) Client(addr string) {
+	c.client = NewClient(addr)
 }
 
 func (c *cluster) InitReplicaOrder(r Replica) {
@@ -154,8 +195,17 @@ func (c *cluster) PreAccept(thrifty bool, preAccept *PreAcceptance) {
 	}
 
 	sent := 0
+	ctx := context.Background()
 	for q := 0; q < cLen; q++ {
-		c.Replica(c.replicaOrder[q]).PreAccept(context.Background(), preAccept)
+		log.WithFields(log.Fields{
+			"replicato":    c.replicaOrder[q],
+			"sent":         sent,
+			"n":            n,
+			"preaccept":    preAccept,
+			"replicaOrder": c.replicaOrder,
+		}).Info("Sending PreAccept")
+		replica := c.replicaOrder[q]
+		go c.Replica(replica).PreAccept(ctx, preAccept)
 		sent++
 		if sent >= n {
 			break
@@ -168,11 +218,17 @@ func (c *cluster) Commit(thrifty bool, commit *TryCommit, commitShort *TryCommit
 	n := cLen - 1
 	n2 := cLen / 2
 	sent := 0
+	ctx := context.Background()
 	for q := 0; q < n; q++ {
 		if thrifty && sent >= n2 {
-			c.Replica(c.replicaOrder[q]).Commit(context.Background(), commit)
+			c.Replica(c.replicaOrder[q]).Commit(ctx, commit)
 		} else {
-			c.Replica(c.replicaOrder[q]).CommitShort(context.Background(), commitShort)
+			log.WithFields(log.Fields{
+				"commit":    commit,
+				"replicaTo": c.replicaOrder[q],
+			}).Info("commit")
+			replica := c.replicaOrder[q]
+			go c.Replica(replica).CommitShort(ctx, commitShort)
 			sent++
 		}
 	}
@@ -188,7 +244,8 @@ func (c *cluster) Accept(thrifty bool, accept *Acceptance) {
 	sent := 0
 	ctx := context.Background()
 	for q := 0; q < cLen-1; q++ {
-		c.Replica(c.replicaOrder[q]).Accept(ctx, accept)
+		replica := c.replicaOrder[q]
+		go c.Replica(replica).Accept(ctx, accept)
 		sent++
 		if sent >= n {
 			break
@@ -210,7 +267,10 @@ func (c *cluster) SetReplicaOrder(ewma []float64) {
 		c.replicaOrder[i] = c.replicaOrder[min]
 		c.replicaOrder[min] = aux
 	}
-
+	log.WithFields(log.Fields{
+		"replicaorder": c.replicaOrder,
+		"ewma":         ewma,
+	}).Info("setting replicaorder -->>")
 }
 
 func (c *cluster) ReplicaOrder() []int32 {
@@ -219,6 +279,11 @@ func (c *cluster) ReplicaOrder() []int32 {
 
 func (c *cluster) ReplyProposeTS(reply *ProposalReplyTS) {
 	//send to client who proposed
+	c.client.ReplyProposeTS(context.Background(), reply)
+}
+
+func (c *cluster) Propose(replicaId int32, proposal *Proposal) {
+	c.Replica(replicaId).Propose(context.Background(), proposal)
 }
 
 func (c *cluster) ReplyPreAccept(replicaId int32, reply *PreAcceptanceReply) {
@@ -241,17 +306,23 @@ func (c *cluster) ReplyTryPreAccept(replicaId int32, reply *TryPreAcceptanceRepl
 	c.Replica(replicaId).ReplyTryPreAccept(context.Background(), reply)
 }
 
-func (c *cluster) Ping(replicaId int32) {
-	_, err := c.Replica(replicaId).Ping(context.Background(), &Beacon{replicaId, rdtsc.Cputicks()})
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Info("error ping")
+func (c *cluster) Ping(beacon *Beacon) {
+	beacon.Timestamp = rdtsc.Cputicks()
+	cLen := int32(c.Len())
+	var q int32
+	ctx := context.Background()
+	for ; q < cLen; q++ {
+		if q == beacon.Replica {
+			continue
+		}
+		go func(r int32) {
+			c.Replica(r).Ping(ctx, beacon)
+		}(q)
 	}
 }
 
-func (c *cluster) ReplyPing(replicaId int32, beacon *Beacon) {
-	c.Replica(beacon.Replica).ReplyPing(context.Background(), &BeaconReply{beacon.Timestamp, 0})
+func (c *cluster) ReplyPing(replicaId int32, beaconReply *BeaconReply) {
+	c.Replica(replicaId).ReplyPing(context.Background(), beaconReply)
 }
 
 func (c *cluster) Prepare(thrifty bool, replicaId int32, preparation *Preparation) {
@@ -279,6 +350,7 @@ func (c *cluster) TryPreAccept(replicaId int32, try *TryPreAcceptance) {
 		if int32(q) == replicaId {
 			continue
 		}
-		c.Replica(c.replicaOrder[q]).TryPreAccept(ctx, try)
+		replica := c.replicaOrder[q]
+		go c.Replica(replica).TryPreAccept(ctx, try)
 	}
 }

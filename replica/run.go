@@ -6,9 +6,12 @@ import (
 	"time"
 )
 
+var slowTick *time.Ticker
+var fastTick *time.Ticker
+
 func (r *epaxosReplica) stopAdapting() {
 	time.Sleep(1000 * 1000 * 1000 * ADAPT_TIME_SEC)
-	r.beacon = false
+	slowTick.Stop()
 	time.Sleep(1000 * 1000 * 1000)
 
 	r.cluster.SetReplicaOrder(r.ewma)
@@ -16,7 +19,7 @@ func (r *epaxosReplica) stopAdapting() {
 
 var conflicted, weird, slow, happy int
 
-func Start(id int32, port string, addr []string) (err error) {
+func Start(id int32, port string, addr []string, client string) (err error) {
 	log.WithFields(log.Fields{
 		"replicaId": id,
 		"port":      port,
@@ -26,6 +29,7 @@ func Start(id int32, port string, addr []string) (err error) {
 		return errors.New("need at least three replicas")
 	}
 
+	cluster.Client(client)
 	cluster.Start()
 
 	replica := NewEpaxosReplica(id, port, cluster)
@@ -40,6 +44,7 @@ func (r *epaxosReplica) run() {
 		"cluster": clusterSize,
 		"replica": r.id,
 	}).Info("running replica")
+	r.cluster.InitReplicaOrder(r)
 
 	if r.exec {
 		go r.executeCommands()
@@ -54,17 +59,17 @@ func (r *epaxosReplica) run() {
 		r.cluster.UpdateReplicaOrder(r, quorum)
 	}
 
-	slowClock := time.NewTicker(time.Millisecond * 150).C
-	var fastClock <-chan time.Time
+	slowTick = time.NewTicker(time.Millisecond * 150)
+	fastTick = time.NewTicker(time.Millisecond * 5)
+	slow := slowTick.C
+	var fast <-chan time.Time
 
 	//Enabled when batching for 5ms
 	if MAX_BATCH > 100 {
-		fastClock = time.NewTicker(time.Millisecond * 5).C
+		fast = fastTick.C
 	}
 
-	if r.beacon {
-		go r.stopAdapting()
-	}
+	go r.stopAdapting()
 
 	proposalSwitch := r.proposals
 
@@ -72,80 +77,81 @@ func (r *epaxosReplica) run() {
 
 		select {
 
-		case proposal := <-proposalSwitch:
-			//got a Propose from a client
-			r.propose(proposal)
-			//deactivate new proposals channel to prioritize the handling of other protocol messages,
-			//and to allow commands to accumulate for batching
-			proposalSwitch = nil
-
-		case <-fastClock:
-			//activate new proposals channel
-			proposalSwitch = r.proposals
-
-		case preparation := <-r.preparations:
-			//got a Prepare message
-			r.prepare(preparation)
-
-		case preAcceptance := <-r.preAcceptances:
-			//got a PreAccept message
-			r.preAccept(preAcceptance)
-
-		case acceptance := <-r.acceptances:
-			//got an Accept message
-			r.accept(acceptance)
-
 		case commit := <-r.commits:
-			//got a Commit message
+			actionLog("<<COMMIT", r.id)
 			r.commit(commit)
 
 		case commitShort := <-r.commitsShort:
-			//got a Commit message
+			actionLog("<<COMMITSHORT", r.id)
 			r.commitShort(commitShort)
 
-		case preparationReply := <-r.preparationReplies:
-			//got a Prepare reply
-			r.prepareReply(preparationReply)
-
-		case preAcceptanceReply := <-r.preAcceptanceReplies:
-			//got a PreAccept reply
-			r.preAcceptReply(preAcceptanceReply)
-
 		case preAcceptanceOk := <-r.preAcceptanceOks:
-			//got a PreAccept reply
+			actionLog("<<PREACCEPTOK", r.id)
 			r.preAcceptOK(preAcceptanceOk)
 
+		case preAcceptanceReply := <-r.preAcceptanceReplies:
+			actionLog("<<PREACCEPTREPLY", r.id)
+			r.preAcceptReply(preAcceptanceReply)
+
+		case preAcceptance := <-r.preAcceptances:
+			actionLog("<<PREACCEPT", r.id)
+			r.preAccept(preAcceptance)
+
 		case acceptanceReply := <-r.acceptanceReplies:
-			//got an Accept reply
+			actionLog("<<ACCEPTREPLY", r.id)
 			r.acceptReply(acceptanceReply)
 
 		case tryPreAcceptance := <-r.tryPreAcceptances:
+			actionLog("<<TRYPREACCEPT", r.id)
 			r.tryPreAccept(tryPreAcceptance)
 
+		case preparation := <-r.preparations:
+			actionLog("<<PREPARE", r.id)
+			r.prepare(preparation)
+
+		case acceptance := <-r.acceptances:
+			actionLog("<<ACCEPT", r.id)
+			r.accept(acceptance)
+
+		case preparationReply := <-r.preparationReplies:
+			actionLog("<<PREPAREREPLY", r.id)
+			r.prepareReply(preparationReply)
+
 		case tryPreAcceptanceReply := <-r.tryPreAcceptanceReplies:
+			actionLog("<<TRYPREACCEPTREPLY", r.id)
 			r.tryPreAcceptReply(tryPreAcceptanceReply)
 
 		case beacon := <-r.beacons:
-			r.cluster.ReplyPing(r.id, beacon)
+			go r.cluster.ReplyPing(beacon.Replica, &BeaconReply{beacon.Timestamp, r.id})
 
-		case <-slowClock:
-			if r.beacon {
-				for q := int32(0); q < int32(clusterSize); q++ {
-					if q == r.id {
-						continue
-					}
-					r.cluster.Ping(q)
-				}
-			}
-			/*	case <-r.OnClientConnect:
-				log.Printf("weird %d; conflicted %d; slow %d; happy %d\n", weird, conflicted, slow, happy)
-				weird, conflicted, slow, happy = 0, 0, 0, 0*/
+		case <-slow:
+			actionLog("PING", r.id)
+			go r.cluster.Ping(&Beacon{r.id, 0.0})
 
 		case iid := <-r.recoveryInstances:
+			actionLog("RECOVERY", r.id)
 			r.startRecoveryForInstance(iid.replica, iid.instance)
 		case <-r.shutdown:
+			log.Info("stop")
 			return
-		default:
+
+		case proposal := <-proposalSwitch:
+			actionLog("<<PROPOSE", r.id)
+			r.propose(proposal)
+			proposalSwitch = nil
+
+		case <-fast:
+			proposalSwitch = r.proposals
 		}
 	}
+}
+
+func buildPipeline() {
+
+}
+
+func actionLog(action string, replica int32) {
+	log.WithFields(log.Fields{
+		"replica": replica,
+	}).Info(action)
 }

@@ -4,6 +4,6 @@ import "grpcreplica.proto";
 
 package replica;
 
-service GrpcClient {
+service GrpcPropose {
   rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
 }

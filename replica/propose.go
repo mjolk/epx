@@ -5,6 +5,9 @@ package replica
                             PHASE 1
 
 ***********************************************************************/
+import (
+	log "github.com/Sirupsen/logrus"
+)
 
 func (r *epaxosReplica) propose(proposal *Proposal) {
 
@@ -35,13 +38,10 @@ func (r *epaxosReplica) propose(proposal *Proposal) {
 func (r *epaxosReplica) startPhase1(replica int32, instance int32, ballot int32,
 	proposals []*Proposal, cmds []*Command, batchSize int) {
 	//init command attributes
+	log.Info("PHASE 1")
 
 	seq := int32(0)
-	deps := make([]int32, DS)
-	replicaCnt := r.cluster.Len()
-	for q := 0; q < replicaCnt; q++ {
-		deps[q] = -1
-	}
+	deps := []int32{-1, -1, -1, -1, -1}
 
 	seq, deps, _ = r.updateAttributes(cmds, seq, deps, replica)
 
@@ -64,6 +64,15 @@ func (r *epaxosReplica) startPhase1(replica int32, instance int32, ballot int32,
 	//r.recordInstanceMetadata(r.InstanceSpace[r.id][instance])
 	//r.recordCommands(cmds)
 	//r.sync()
+
+	log.WithFields(log.Fields{
+		"replica":  r.id,
+		"instance": instance,
+		"ballot":   ballot,
+		"cmds":     len(cmds),
+		"sequence": seq,
+		"deps":     deps,
+	}).Info("BCASTPREACCEPT>>")
 
 	r.bcastPreAccept(r.id, instance, ballot, cmds, seq, deps)
 

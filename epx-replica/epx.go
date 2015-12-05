@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/mjolk/epaxos_grpc/replica"
+	"github.com/mjolk/epx/replica"
 	"os"
 )
 
@@ -18,6 +18,8 @@ var ports = []string{
 	":10003",
 }
 
+var client = ":10000"
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "replica"
@@ -31,7 +33,7 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		var id int = c.Int("replica")
-		if err := replica.Start(int32(id), ports[id], addrs); err != nil {
+		if err := replica.Start(int32(id), ports[id], addrs, "localhost:10000"); err != nil {
 			panic(err)
 		}
 	}

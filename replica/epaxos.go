@@ -2,7 +2,7 @@ package replica
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/mjolk/epaxos_grpc/bloomfilter"
+	"github.com/mjolk/epx/bloomfilter"
 	"golang.org/x/net/context"
 	"math"
 	"sync"
@@ -14,7 +14,7 @@ const FALSE = uint8(0)
 const DS = 5
 const ADAPT_TIME_SEC = 10
 
-const MAX_BATCH = 1000
+const MAX_BATCH = 101
 
 const COMMIT_GRACE_PERIOD = 10 * 1e9 //10 seconds
 
@@ -115,6 +115,8 @@ func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 		preAcceptances:          make(chan *PreAcceptance, CHAN_BUFFER_SIZE),
 		acceptances:             make(chan *Acceptance, CHAN_BUFFER_SIZE),
 		commits:                 make(chan *TryCommit, CHAN_BUFFER_SIZE),
+		commitsShort:            make(chan *TryCommitShort, CHAN_BUFFER_SIZE),
+		preAcceptanceReplies:    make(chan *PreAcceptanceReply, CHAN_BUFFER_SIZE),
 		preAcceptanceOks:        make(chan *PreAcceptanceOk, CHAN_BUFFER_SIZE),
 		acceptanceReplies:       make(chan *AcceptanceReply, CHAN_BUFFER_SIZE),
 		tryPreAcceptances:       make(chan *TryPreAcceptance, CHAN_BUFFER_SIZE),
@@ -150,18 +152,12 @@ func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 }
 
 func (r *epaxosReplica) ReplyPropose(ctx context.Context, propReply *ProposalReply) (*Empty, error) {
+	log.Info("<<--replypropose")
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) ReplyProposeTS(ctx context.Context, propReplyTS *ProposalReplyTS) (*Empty, error) {
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) Read(ctx context.Context, key *Key) (*Empty, error) {
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) ReplyRead(ctx context.Context, value *Value) (*Empty, error) {
+	log.Info("<<--replyproposeTS")
 	return &Empty{}, nil
 }
 
@@ -184,45 +180,54 @@ func (r *epaxosReplica) ReplyPrepare(ctx context.Context, prepReply *Preparation
 }
 
 func (r *epaxosReplica) TryPreAccept(ctx context.Context, tryPreAcceptance *TryPreAcceptance) (*Empty, error) {
+	log.Info("<<--trypreaccept")
 	r.tryPreAcceptances <- tryPreAcceptance
 	return &Empty{}, nil
 }
 func (r *epaxosReplica) ReplyTryPreAccept(ctx context.Context, tryPreAcceptanceReply *TryPreAcceptanceReply) (*Empty, error) {
+	log.Info("<<--trypreacceptreply")
 	r.tryPreAcceptanceReplies <- tryPreAcceptanceReply
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) PreAccept(ctx context.Context, preAcceptance *PreAcceptance) (*Empty, error) {
+	log.Info("<<--preaccept")
 	r.preAcceptances <- preAcceptance
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) ReplyPreAccept(ctx context.Context, preAcceptanceReply *PreAcceptanceReply) (*Empty, error) {
+	log.Info("<<--preacceptreply <<<-------------------------------------------------------------------------------------------------")
 	r.preAcceptanceReplies <- preAcceptanceReply
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) PreAcceptOK(ctx context.Context, preAcceptanceOk *PreAcceptanceOk) (*Empty, error) {
+	log.Info("<<--preacceptOK")
 	r.preAcceptanceOks <- preAcceptanceOk
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) Accept(ctx context.Context, acceptance *Acceptance) (*Empty, error) {
+	log.Info("<<--accept")
 	r.acceptances <- acceptance
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) ReplyAccept(ctx context.Context, acceptanceReply *AcceptanceReply) (*Empty, error) {
+	log.Info("<<--acceptreply")
 	r.acceptanceReplies <- acceptanceReply
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) Commit(ctx context.Context, tryCommit *TryCommit) (*Empty, error) {
+	log.Info("<<--COMMIT")
 	r.commits <- tryCommit
 	return &Empty{}, nil
 }
 
 func (r *epaxosReplica) CommitShort(ctx context.Context, tryCommitShort *TryCommitShort) (*Empty, error) {
+	log.Info("<<--commmitshort")
 	r.commitsShort <- tryCommitShort
 	return &Empty{}, nil
 }

@@ -6,6 +6,10 @@ package replica
 
 ***********************************************************************/
 
+import (
+	log "github.com/Sirupsen/logrus"
+)
+
 func (r *epaxosReplica) commit(commit *TryCommit) {
 	inst := r.instanceSpace[commit.Replica][commit.Instance]
 
@@ -19,8 +23,8 @@ func (r *epaxosReplica) commit(commit *TryCommit) {
 
 	if inst != nil {
 		if inst.lb != nil && inst.lb.clientProposals != nil && len(commit.Commands) == 0 {
-			//someone committed a NO-OP, but we have proposals for this instance
-			//try in a different instance
+			log.Info(`someone committed a NO-OP, but we have proposals for this instance
+			try in a different instance`)
 			for _, p := range inst.lb.clientProposals {
 				r.proposals <- p
 			}
@@ -52,6 +56,7 @@ func (r *epaxosReplica) commit(commit *TryCommit) {
 			r.clearHashtables()
 		}
 	}
+	log.Info("updatecommitted")
 	r.updateCommitted(commit.Replica)
 
 	//	r.recordInstanceMetadata(r.InstanceSpace[commit.Replica][commit.Instance])
@@ -67,7 +72,8 @@ func (r *epaxosReplica) commitShort(commit *TryCommitShort) {
 
 	if inst != nil {
 		if inst.lb != nil && inst.lb.clientProposals != nil {
-			//try command in a different instance
+			log.Info(`someone committed a NO-OP, but we have proposals for this instance
+			try in a different instance`)
 			for _, p := range inst.lb.clientProposals {
 				r.proposals <- p
 			}
@@ -95,6 +101,7 @@ func (r *epaxosReplica) commitShort(commit *TryCommitShort) {
 			r.clearHashtables()
 		}
 	}
+	log.Info("updatecommitted")
 	r.updateCommitted(commit.Replica)
 
 	//	r.recordInstanceMetadata(r.InstanceSpace[commit.Replica][commit.Instance])

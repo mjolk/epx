@@ -2,11 +2,13 @@ package replica
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/mjolk/epaxos_grpc/rdtsc"
+	"github.com/mjolk/epx/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	//"google.golang.org/grpc/credentials"
+	"fmt"
 	"net"
+	"os"
 )
 
 const CHAN_BUFFER_SIZE = 200000
@@ -36,8 +38,6 @@ type Replica interface {
 	Propose(context.Context, *Proposal) (*Empty, error)
 	ReplyPropose(context.Context, *ProposalReply) (*Empty, error)
 	ReplyProposeTS(context.Context, *ProposalReplyTS) (*Empty, error)
-	Read(context.Context, *Key) (*Empty, error)
-	ReplyRead(context.Context, *Value) (*Empty, error)
 	ProposeAndRead(context.Context, *ProposalRead) (*Empty, error)
 	ReplyProposeAndRead(context.Context, *ProposalReadReply) (*Empty, error)
 	Prepare(context.Context, *Preparation) (*Empty, error)
@@ -68,8 +68,6 @@ type RemoteReplica interface {
 	Propose(ctx context.Context, in *Proposal, opts ...grpc.CallOption) (*Empty, error)
 	ReplyPropose(ctx context.Context, in *ProposalReply, opts ...grpc.CallOption) (*Empty, error)
 	ReplyProposeTS(ctx context.Context, in *ProposalReplyTS, opts ...grpc.CallOption) (*Empty, error)
-	Read(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Empty, error)
-	ReplyRead(ctx context.Context, in *Value, opts ...grpc.CallOption) (*Empty, error)
 	ProposeAndRead(ctx context.Context, in *ProposalRead, opts ...grpc.CallOption) (*Empty, error)
 	ReplyProposeAndRead(ctx context.Context, in *ProposalReadReply, opts ...grpc.CallOption) (*Empty, error)
 	Prepare(ctx context.Context, in *Preparation, opts ...grpc.CallOption) (*Empty, error)
@@ -176,7 +174,18 @@ func (r *remoteReplica) IsDurable() bool {
 	return r.durable
 }
 
+func setLog(id int32) {
+}
+
 func (r *epaxosReplica) Start() {
+	f, err := os.OpenFile(fmt.Sprintf("logreplica_%d.log", r.id), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+
 	log.WithFields(log.Fields{
 		"addr": r.address,
 	}).Info("setting up server")
@@ -257,9 +266,6 @@ func (r *replica) Ewma() []float64 {
 }
 
 func (r *replica) Ping(ctx context.Context, beacon *Beacon) (*Empty, error) {
-	log.WithFields(log.Fields{
-		"ts": beacon.Timestamp,
-	}).Info("received ping")
 	r.beacons <- beacon
 	return &Empty{}, nil
 }
@@ -271,6 +277,9 @@ func (r *replica) ReplyPing(ctx context.Context, beaconReply *BeaconReply) (*Emp
 }
 
 func (r *replica) Propose(ctx context.Context, prop *Proposal) (*Empty, error) {
+	log.WithFields(log.Fields{
+		"proposal received": prop,
+	}).Info("received rpoposal")
 	r.proposals <- prop
 	return &Empty{}, nil
 }

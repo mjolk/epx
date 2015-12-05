@@ -1,5 +1,7 @@
 package replica
 
+import ()
+
 func UniqueBallot(r Replica, ballot int32) int32 {
 	return (ballot << 4) | r.Id()
 }
@@ -18,10 +20,6 @@ func IsInitialBallot(ballot int32) bool {
 
 func (r *epaxosReplica) bcastCommit(replica int32, instance int32,
 	cmds []*Command, seq int32, deps []int32) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	ec := new(TryCommit)
 	ec.Leader = r.id
 	ec.Replica = replica
@@ -37,15 +35,11 @@ func (r *epaxosReplica) bcastCommit(replica int32, instance int32,
 	ecs.Seq = seq
 	ecs.Deps = deps
 
-	r.cluster.Commit(r.thrifty, ec, ecs)
+	go r.cluster.Commit(r.thrifty, ec, ecs)
 }
 
 func (r *epaxosReplica) bcastAccept(replica int32, instance int32, ballot int32,
 	count int32, seq int32, deps []int32) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	ea := new(Acceptance)
 	ea.Leader = r.id
 	ea.Replica = replica
@@ -55,16 +49,12 @@ func (r *epaxosReplica) bcastAccept(replica int32, instance int32, ballot int32,
 	ea.Seq = seq
 	ea.Deps = deps
 
-	r.cluster.Accept(r.thrifty, ea)
+	go r.cluster.Accept(r.thrifty, ea)
 
 }
 
 func (r *epaxosReplica) bcastPreAccept(replica int32, instance int32, ballot int32,
 	cmds []*Command, seq int32, deps []int32) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	pa := new(PreAcceptance)
 	pa.Leader = r.id
 	pa.Replica = replica
@@ -73,26 +63,18 @@ func (r *epaxosReplica) bcastPreAccept(replica int32, instance int32, ballot int
 	pa.Commands = cmds
 	pa.Seq = seq
 	pa.Deps = deps
-	r.cluster.PreAccept(r.thrifty, pa)
+	go r.cluster.PreAccept(r.thrifty, pa)
 }
 
 func (r *epaxosReplica) bcastPrepare(replica int32, instance int32, ballot int32) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	preparation := &Preparation{r.id, replica, instance, ballot}
-	r.cluster.Prepare(r.thrifty, r.id, preparation)
+	go r.cluster.Prepare(r.thrifty, r.id, preparation)
 }
 
 var tpa *TryPreAcceptance
 
 func (r *epaxosReplica) bcastTryPreAccept(replica int32, instance int32, ballot int32,
 	cmds []*Command, seq int32, deps []int32) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	tpa.Leader = r.id
 	tpa.Replica = replica
 	tpa.Instance = instance
@@ -101,5 +83,5 @@ func (r *epaxosReplica) bcastTryPreAccept(replica int32, instance int32, ballot 
 	tpa.Seq = seq
 	tpa.Deps = deps
 
-	r.cluster.TryPreAccept(r.id, tpa)
+	go r.cluster.TryPreAccept(r.id, tpa)
 }

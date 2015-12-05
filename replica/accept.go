@@ -5,15 +5,25 @@ package replica
                         PHASE 2
 
 ***********************************************************************/
+import (
+	log "github.com/Sirupsen/logrus"
+)
 
 func (r *epaxosReplica) accept(accept *Acceptance) {
 	inst := r.instanceSpace[accept.Leader][accept.Instance]
+	log.WithFields(log.Fields{
+		"replica": r.id,
+	}).Info("ACCEPT")
 
 	if accept.Seq >= r.maxSeq {
 		r.maxSeq = accept.Seq + 1
 	}
 
 	if inst != nil && (inst.status == Status_COMMITTED || inst.status == Status_EXECUTED) {
+		log.WithFields(log.Fields{
+			"inst":       inst,
+			"inststatus": inst.status,
+		}).Info("RETURN")
 		return
 	}
 
@@ -23,7 +33,11 @@ func (r *epaxosReplica) accept(accept *Acceptance) {
 
 	if inst != nil {
 		if accept.Ballot < inst.ballot {
-			r.cluster.ReplyAccept(accept.Leader, &AcceptanceReply{accept.Replica, accept.Instance, false, inst.ballot})
+			log.WithFields(log.Fields{
+				"accept.ballot": accept.Ballot,
+				"inst.ballot":   inst.ballot,
+			}).Info("REPLYACCEPT")
+			go r.cluster.ReplyAccept(accept.Leader, &AcceptanceReply{accept.Replica, accept.Instance, false, inst.ballot})
 			return
 		}
 		inst.status = Status_ACCEPTED
@@ -52,7 +66,10 @@ func (r *epaxosReplica) accept(accept *Acceptance) {
 	//	r.recordInstanceMetadata(r.InstanceSpace[accept.Replica][accept.Instance])
 	//	r.sync()
 
-	r.cluster.ReplyAccept(accept.Leader,
+	log.WithFields(log.Fields{
+		"accept": accept,
+	}).Info("replyaccept")
+	go r.cluster.ReplyAccept(accept.Leader,
 		&AcceptanceReply{
 			accept.Replica,
 			accept.Instance,
@@ -70,6 +87,10 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 	}
 
 	if inst.ballot != areply.Ballot {
+		log.WithFields(log.Fields{
+			"inst.ballot":   inst.ballot,
+			"areply.ballot": areply.Ballot,
+		}).Info("RETURN")
 		return
 	}
 
@@ -82,6 +103,9 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 		if inst.lb.nacks >= cLen/2 {
 			// TODO
 		}
+		log.WithFields(log.Fields{
+			"inst.lb.nacks": inst.lb.nacks,
+		}).Info("RETURN")
 		return
 	}
 
@@ -93,20 +117,26 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 		if inst.lb.clientProposals != nil && !r.dreply {
 			// give clients the all clear
 			pLen := len(inst.lb.clientProposals)
+			log.WithFields(log.Fields{
+				"proposals": pLen,
+			}).Info("Sending poposal reply")
 			for i := 0; i < pLen; i++ {
-				r.cluster.ReplyProposeTS(
+				c := i
+				go r.cluster.ReplyProposeTS(
 					&ProposalReplyTS{
 						false,
-						inst.lb.clientProposals[i].CommandId,
+						inst.lb.clientProposals[c].CommandId,
 						NIL,
-						inst.lb.clientProposals[i].Timestamp,
-						inst.lb.clientProposals[i].Client})
+						inst.lb.clientProposals[c].Timestamp})
 			}
 		}
 
 		//		r.recordInstanceMetadata(inst)
 		//		r.sync() //is this necessary here?
-
+		log.WithFields(log.Fields{
+			"areply": areply,
+			"inst":   inst,
+		}).Info("bcastcommit")
 		r.bcastCommit(areply.Replica, areply.Instance, inst.commands, inst.seq, inst.deps)
 	}
 }

@@ -1,7 +1,7 @@
 package bloomfilter
 
 import (
-	"github.com/mjolk/epaxos_grpc/bitvec"
+	"github.com/mjolk/epx/bitvec"
 	"math"
 )
 

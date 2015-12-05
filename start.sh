@@ -1,5 +1,5 @@
 #!/bin/bash
 
-epaxos_grpc -i 0 &
-epaxos_grpc -i 1 &
-epaxos_grpc -i 2
+epx-replica -i 0 &
+epx-replica -i 1 &
+epx-replica -i 2

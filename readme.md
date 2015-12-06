@@ -17,6 +17,8 @@ and probably has more bugs but it's a start
 
 ## Installation
 
+project created with go1.5.1
+
 1. go get
 2. cd epx-replica
 3. go install

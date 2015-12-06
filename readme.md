@@ -34,6 +34,13 @@ project created with go1.5.1
 12. next you can track what's happening in logclient.log, logreplica_0...x.log
 the code is still loaded with logging statements -> wip
 
+##Todo
+
+- further testing and verify i didn't break anything regarding correctness
+- fill in some Todo's, less likely (or optimal regarding the algorithm) paths in the code still need some work
+- write more tests to run and verify performance/correctness
+- optimize
+
 ## Usage
 
 lots of applications, but for now just for playing around with

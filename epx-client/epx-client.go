@@ -36,7 +36,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "reqs, r",
-			Value: 5000,
+			Value: 1,
 			Usage: "number of requests",
 		},
 		cli.IntFlag{

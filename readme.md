@@ -28,6 +28,10 @@ project created with go1.5.1
 7. cd ..
 8. ./start.sh
 ** the start script assumes your $GOPATH/bin is on PATH
+!!!! WAIT 10 secs (you can track with tail -f on one of the replica logs) before you start the epx-client
+!!!! the replicas take 10 secs to organize the optimal paths they will use to contact each other
+!!!! for the first round ( they update themselves while they are running but if you do not have the paths set
+!!!! on the first run you might see some strange results, i haven't rigged the client yet to trigger multiple rounds form cli)
 9. ctrl Z
 10. bg
 11. epx-client (again assumes $GOPATH/bin is on your PATH)

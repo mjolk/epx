@@ -42,7 +42,7 @@ on the first run you might see some strange results, i haven't rigged the client
 
 ##Todo
 
-- enable command execution
+~~enable command execution~~
 - add local recovery persistence
 - add goleveldb as first Store implementation
 - further testing and verify i didn't break anything regarding correctness

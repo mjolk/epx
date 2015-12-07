@@ -36,7 +36,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "reqs, r",
-			Value: 1,
+			Value: 100,
 			Usage: "number of requests",
 		},
 		cli.IntFlag{
@@ -64,7 +64,7 @@ func main() {
 		},
 		cli.IntFlag{
 			Name:  "conflicts, c",
-			Value: -1,
+			Value: 5,
 			Usage: "Percentage of conflicts. Defaults to 0%",
 		},
 	}
@@ -76,6 +76,7 @@ func main() {
 		defer f.Close()
 
 		log.SetOutput(f)
+		log.Info("starting client")
 		go run(c)
 		start()
 	}
@@ -103,6 +104,8 @@ func run(c *cli.Context) {
 	}
 	cluster.Start()
 
+	log.Info("cluster started")
+
 	N := cluster.Len()
 
 	requestsPr := requests/rounds + eps
@@ -125,14 +128,15 @@ func run(c *cli.Context) {
 			r = rand.Intn(100)
 			if r < conflicts {
 				karray[i] = conflictKey
-				if r < writes {
-					put[i] = true
-				} else {
-					put[i] = false
-				}
 			} else {
 				test[key]++
 			}
+		}
+		r = rand.Intn(100)
+		if r < writes {
+			put[i] = true
+		} else {
+			put[i] = false
 		}
 	}
 
@@ -147,7 +151,7 @@ func run(c *cli.Context) {
 		for i := 0; i < requestsPr; i++ {
 			proposal := &replica.Proposal{
 				id,
-				&replica.Command{replica.Command_PUT, "a", "test"},
+				&replica.Command{replica.Command_PUT, "a", []byte("test")},
 				time.Now().Unix(),
 			}
 			proposal.CommandId = id
@@ -157,13 +161,13 @@ func run(c *cli.Context) {
 				proposal.Command.Operation = replica.Command_GET
 			}
 			proposal.Command.Key = karray[i]
-			proposal.Command.Value = varray[i]
+			proposal.Command.Value = []byte(varray[i])
 			//args.Timestamp = time.Now().UnixNano()
 			if !fast {
 				leader := rarray[i]
-				/*log.WithFields(log.Fields{
+				log.WithFields(log.Fields{
 					"proposal": proposal,
-				}).Info("Sending proposal")*/
+				}).Info("Sending proposal")
 				go cluster.Propose(int32(leader), proposal)
 			} else {
 				//send to everyone

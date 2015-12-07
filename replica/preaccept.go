@@ -186,7 +186,7 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 					&ProposalReplyTS{
 						true,
 						inst.lb.clientProposals[c].CommandId,
-						NIL,
+						[]byte{},
 						inst.lb.clientProposals[c].Timestamp})
 			}
 		}
@@ -257,7 +257,7 @@ func (r *epaxosReplica) preAcceptOK(pareply *PreAcceptanceOk) {
 					&ProposalReplyTS{
 						true,
 						inst.lb.clientProposals[c].CommandId,
-						NIL,
+						[]byte{},
 						inst.lb.clientProposals[c].Timestamp})
 			}
 		}

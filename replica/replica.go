@@ -6,21 +6,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	//"google.golang.org/grpc/credentials"
-	"fmt"
-	"net"
-	"os"
 )
 
 const CHAN_BUFFER_SIZE = 200000
-
-const NIL = ""
-
-type Store interface {
-	Lock()
-	UnLock()
-	Get(string) string
-	Put(string, string)
-}
 
 type Replica interface {
 	Id() int32
@@ -32,6 +20,7 @@ type Replica interface {
 	IsBeacon() bool
 	IsDurable() bool
 	Store() Store
+	SetStore(Store)
 	Start()
 	Ping(context.Context, *Beacon) (*Empty, error)
 	ReplyPing(context.Context, *BeaconReply) (*Empty, error)
@@ -177,38 +166,12 @@ func (r *remoteReplica) IsDurable() bool {
 func setLog(id int32) {
 }
 
-func (r *epaxosReplica) Start() {
-	f, err := os.OpenFile(fmt.Sprintf("logreplica_%d.log", r.id), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	log.SetOutput(f)
-
-	log.WithFields(log.Fields{
-		"addr": r.address,
-	}).Info("setting up server")
-	lis, err := net.Listen("tcp", r.address)
-	if err != nil {
-		panic(err)
-	}
-	var opts []grpc.ServerOption
-	//	creds, err := credentials.NewServerTLSFromFile("mjolk.be.crt", "mjolk.be.key")
-	//	if err != nil {
-	//		panic("Failed to generate credentials %v")
-	//	}
-	//	opts = []grpc.ServerOption{grpc.Creds(creds)}
-	grpcServer := grpc.NewServer(opts...)
-	RegisterGrpcReplicaServer(grpcServer, r)
-	go r.run()
-	if err := grpcServer.Serve(lis); err != nil {
-		panic(err)
-	}
+func (r *replica) Store() Store {
+	return r.store
 }
 
-func (r *replica) Store() Store {
-	return nil
+func (r *replica) SetStore(store Store) {
+	r.store = store
 }
 
 func (r *replica) Cluster() Cluster {
@@ -221,10 +184,6 @@ func (r *replica) Id() int32 {
 
 func (r *replica) Addr() string {
 	return r.address
-}
-
-func (r *replica) State() Store {
-	return r.store
 }
 
 func (r *replica) Beacons() chan *Beacon {

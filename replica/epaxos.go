@@ -1,22 +1,25 @@
 package replica
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/mjolk/epx/bloomfilter"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"math"
+	"net"
+	"os"
 	"sync"
+	"time"
 )
 
 const MAX_DEPTH_DEP = 10
-const TRUE = uint8(1)
-const FALSE = uint8(0)
 const DS = 5
 const ADAPT_TIME_SEC = 10
 
 const MAX_BATCH = 101
 
-const COMMIT_GRACE_PERIOD = 10 * 1e9 //10 seconds
+const COMMIT_GRACE_PERIOD = 10 * time.Second
 
 const BF_K = 4
 const BF_M_N = 32.0
@@ -100,6 +103,8 @@ type epaxosReplica struct {
 	clientLock              *sync.Mutex
 	recoveryInstances       chan *instanceId
 	exec                    bool
+	problemInstances        []int32
+	clusterTimeouts         []time.Duration
 }
 
 //todo fix Key loopup hash map
@@ -133,6 +138,8 @@ func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 		latestCPInstance:        -1,
 		clientLock:              new(sync.Mutex),
 		recoveryInstances:       make(chan *instanceId, CHAN_BUFFER_SIZE),
+		problemInstances:        make([]int32, replicaCnt),
+		clusterTimeouts:         make([]time.Duration, replicaCnt),
 	}
 
 	for i := 0; i < replicaCnt; i++ {
@@ -149,6 +156,36 @@ func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 	cpMarker = make([]*Command, 0)
 
 	return ereplica
+}
+
+func (r *epaxosReplica) Start() {
+	f, err := os.OpenFile(fmt.Sprintf("logreplica_%d.log", r.id), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+
+	log.WithFields(log.Fields{
+		"addr": r.address,
+	}).Info("setting up server")
+	lis, err := net.Listen("tcp", r.address)
+	if err != nil {
+		panic(err)
+	}
+	var opts []grpc.ServerOption
+	//	creds, err := credentials.NewServerTLSFromFile("mjolk.be.crt", "mjolk.be.key")
+	//	if err != nil {
+	//		panic("Failed to generate credentials %v")
+	//	}
+	//	opts = []grpc.ServerOption{grpc.Creds(creds)}
+	grpcServer := grpc.NewServer(opts...)
+	RegisterGrpcReplicaServer(grpcServer, r)
+	go r.run()
+	if err := grpcServer.Serve(lis); err != nil {
+		panic(err)
+	}
 }
 
 func (r *epaxosReplica) ReplyPropose(ctx context.Context, propReply *ProposalReply) (*Empty, error) {

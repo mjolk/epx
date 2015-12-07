@@ -33,7 +33,8 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		var id int = c.Int("replica")
-		if err := replica.Start(int32(id), ports[id], addrs, "localhost:10000"); err != nil {
+		if err := replica.Start(int32(id), ports[id], addrs,
+			replica.NewTestStore(5000), "localhost:10000"); err != nil {
 			panic(err)
 		}
 	}

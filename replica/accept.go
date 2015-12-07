@@ -126,7 +126,7 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 					&ProposalReplyTS{
 						false,
 						inst.lb.clientProposals[c].CommandId,
-						NIL,
+						[]byte{},
 						inst.lb.clientProposals[c].Timestamp})
 			}
 		}

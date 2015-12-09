@@ -19,7 +19,7 @@ func (r *epaxosReplica) stopAdapting() {
 
 var conflicted, weird, slow, happy int
 
-func Start(id int32, port string, addr []string, store Store, client string) (err error) {
+func Start(id int32, port string, addr []string, store Store) (err error) {
 	log.WithFields(log.Fields{
 		"replicaId": id,
 		"port":      port,
@@ -29,8 +29,7 @@ func Start(id int32, port string, addr []string, store Store, client string) (er
 		return errors.New("need at least three replicas")
 	}
 
-	//TODO multiple clients
-	cluster.Client(client)
+	//	cluster.Client(client)
 	cluster.Start()
 
 	replica := NewEpaxosReplica(id, port, cluster)

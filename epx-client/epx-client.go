@@ -5,10 +5,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/mjolk/epx/replica"
 	"github.com/mjolk/epx/util"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
+	"io"
 	"math/rand"
-	"net"
 	"os"
 	"time"
 )
@@ -78,7 +76,6 @@ func main() {
 		log.SetOutput(f)
 		log.Info("starting client")
 		go run(c)
-		start()
 	}
 	app.Run(os.Args)
 }
@@ -140,6 +137,8 @@ func run(c *cli.Context) {
 		}
 	}
 
+	replies := make(chan *replica.ProposalReplyTS, requests)
+
 	var id int32 = 0
 
 	beforeTotal := time.Now()
@@ -149,7 +148,7 @@ func run(c *cli.Context) {
 		before := time.Now()
 
 		for i := 0; i < requestsPr; i++ {
-			proposal := &replica.Proposal{
+			proposal := &replica.ClientProposal{
 				id,
 				&replica.Command{replica.Command_PUT, "a", []byte("test")},
 				time.Now().Unix(),
@@ -168,14 +167,37 @@ func run(c *cli.Context) {
 				log.WithFields(log.Fields{
 					"proposal": proposal,
 				}).Info("Sending proposal")
-				go cluster.Propose(int32(leader), proposal)
+				go cluster.ProposeStream(int32(leader)).Send(proposal)
 			} else {
 				//send to everyone
 				for rep := 0; rep < N; rep++ {
-					go cluster.Propose(int32(rep), proposal)
+					go cluster.ProposeStream(int32(rep)).Send(proposal)
 				}
 			}
 			id++
+		}
+
+		for i := 0; i < N; i++ {
+			stream := cluster.ProposeStream(int32(i))
+			go func(replica int32) {
+				for {
+					reply, err := stream.Recv()
+					if err == io.EOF {
+						log.Info("EOF")
+						return
+					}
+					if err != nil {
+						log.Info("could not read from stream")
+					}
+					replies <- reply
+				}
+			}(int32(i))
+		}
+
+		for reply := range replies {
+			log.WithFields(log.Fields{
+				"reply": reply,
+			}).Info("received reply")
 		}
 
 		after := time.Now()
@@ -190,50 +212,4 @@ func run(c *cli.Context) {
 		"time": afterTotal.Sub(beforeTotal),
 	}).Info("Test done\n")
 
-}
-
-type clientServer struct {
-	replies []*replica.ProposalReplyTS
-}
-
-var reps int
-
-func (r *clientServer) ReplyProposeTS(ctx context.Context, propReplyTS *replica.ProposalReplyTS) (*replica.Empty, error) {
-	r.replies = append(r.replies, propReplyTS)
-	reps++
-	log.WithFields(log.Fields{
-		"replyValue": propReplyTS,
-		"count":      reps,
-	}).Info("Received reply")
-	if reps == requests {
-		log.WithFields(log.Fields{
-			"count": requests,
-		}).Info("Success")
-	}
-	return &replica.Empty{}, nil
-}
-
-func newClientServer() replica.GrpcProposeServer {
-	return &clientServer{
-		make([]*replica.ProposalReplyTS, 0),
-	}
-}
-
-func start() {
-	log.Info("setting up server")
-	lis, err := net.Listen("tcp", ":10000")
-	if err != nil {
-		panic(err)
-	}
-	var opts []grpc.ServerOption
-	//	creds, err := credentials.NewServerTLSFromFile("mjolk.be.crt", "mjolk.be.key")
-	//	if err != nil {
-	//		panic("Failed to generate credentials %v")
-	//	}
-	//	opts = []grpc.ServerOption{grpc.Creds(creds)}
-	grpcServer := grpc.NewServer(opts...)
-	replica.RegisterGrpcProposeServer(grpcServer, newClientServer())
-	if err := grpcServer.Serve(lis); err != nil {
-		panic(err)
-	}
 }

@@ -5,7 +5,8 @@ package replica;
 service GrpcReplica {
   rpc Ping(Beacon) returns (Empty) {}
   rpc ReplyPing(BeaconReply) returns (Empty) {}
-  rpc Propose(Proposal) returns (Empty) {}
+  rpc ProposeStream(stream ClientProposal) returns (stream ProposalReplyTS) {}
+  rpc Propose(ClientProposal) returns (Empty) {}
   rpc ReplyPropose(ProposalReply) returns (Empty) {}
   rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
   rpc ProposeAndRead(ProposalRead) returns (Empty) {}
@@ -48,7 +49,7 @@ message Command {
   bytes value = 3; 
 }
 
-message Proposal {
+message ClientProposal {
   int32 command_id = 1;
   Command command = 2;
   int64 timestamp = 3;

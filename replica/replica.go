@@ -5,6 +5,7 @@ import (
 	"github.com/mjolk/epx/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"io"
 	//"google.golang.org/grpc/credentials"
 )
 
@@ -24,7 +25,8 @@ type Replica interface {
 	Start()
 	Ping(context.Context, *Beacon) (*Empty, error)
 	ReplyPing(context.Context, *BeaconReply) (*Empty, error)
-	Propose(context.Context, *Proposal) (*Empty, error)
+	Propose(context.Context, *ClientProposal) (*Empty, error)
+	ProposeStream(GrpcReplica_ProposeStreamServer) error
 	ReplyPropose(context.Context, *ProposalReply) (*Empty, error)
 	ReplyProposeTS(context.Context, *ProposalReplyTS) (*Empty, error)
 	ProposeAndRead(context.Context, *ProposalRead) (*Empty, error)
@@ -52,24 +54,26 @@ type RemoteReplica interface {
 	IsBeacon() bool
 	IsDurable() bool
 	SetClient(GrpcReplicaClient)
-	Ping(ctx context.Context, in *Beacon, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPing(ctx context.Context, in *BeaconReply, opts ...grpc.CallOption) (*Empty, error)
-	Propose(ctx context.Context, in *Proposal, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPropose(ctx context.Context, in *ProposalReply, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeTS(ctx context.Context, in *ProposalReplyTS, opts ...grpc.CallOption) (*Empty, error)
-	ProposeAndRead(ctx context.Context, in *ProposalRead, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeAndRead(ctx context.Context, in *ProposalReadReply, opts ...grpc.CallOption) (*Empty, error)
-	Prepare(ctx context.Context, in *Preparation, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPrepare(ctx context.Context, in *PreparationReply, opts ...grpc.CallOption) (*Empty, error)
-	TryPreAccept(ctx context.Context, in *TryPreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyTryPreAccept(ctx context.Context, in *TryPreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAccept(ctx context.Context, in *PreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPreAccept(ctx context.Context, in *PreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAcceptOK(ctx context.Context, in *PreAcceptanceOk, opts ...grpc.CallOption) (*Empty, error)
-	Accept(ctx context.Context, in *Acceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyAccept(ctx context.Context, in *AcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	Commit(ctx context.Context, in *TryCommit, opts ...grpc.CallOption) (*Empty, error)
-	CommitShort(ctx context.Context, in *TryCommitShort, opts ...grpc.CallOption) (*Empty, error)
+	Ping(context.Context, *Beacon, ...grpc.CallOption) (*Empty, error)
+	ReplyPing(context.Context, *BeaconReply, ...grpc.CallOption) (*Empty, error)
+	Propose(context.Context, *ClientProposal, ...grpc.CallOption) (*Empty, error)
+	ProposeStream(context.Context, ...grpc.CallOption) (GrpcReplica_ProposeStreamClient, error)
+	ReplyPropose(context.Context, *ProposalReply, ...grpc.CallOption) (*Empty, error)
+	ReplyProposeTS(context.Context, *ProposalReplyTS, ...grpc.CallOption) (*Empty, error)
+	ProposeAndRead(context.Context, *ProposalRead, ...grpc.CallOption) (*Empty, error)
+	ReplyProposeAndRead(context.Context, *ProposalReadReply, ...grpc.CallOption) (*Empty, error)
+	Prepare(context.Context, *Preparation, ...grpc.CallOption) (*Empty, error)
+	ReplyPrepare(context.Context, *PreparationReply, ...grpc.CallOption) (*Empty, error)
+	TryPreAccept(context.Context, *TryPreAcceptance, ...grpc.CallOption) (*Empty, error)
+	ReplyTryPreAccept(context.Context, *TryPreAcceptanceReply, ...grpc.CallOption) (*Empty, error)
+	PreAccept(context.Context, *PreAcceptance, ...grpc.CallOption) (*Empty, error)
+	ReplyPreAccept(context.Context, *PreAcceptanceReply, ...grpc.CallOption) (*Empty, error)
+	PreAcceptOK(context.Context, *PreAcceptanceOk, ...grpc.CallOption) (*Empty, error)
+	Accept(context.Context, *Acceptance, ...grpc.CallOption) (*Empty, error)
+	ReplyAccept(context.Context, *AcceptanceReply, ...grpc.CallOption) (*Empty, error)
+	Commit(context.Context, *TryCommit, ...grpc.CallOption) (*Empty, error)
+	CommitShort(context.Context, *TryCommitShort, ...grpc.CallOption) (*Empty, error)
+	ProposeStreamServer() GrpcReplica_ProposeStreamClient
 }
 
 //float64func NewReplica(id int32)
@@ -90,15 +94,21 @@ type replica struct {
 	ewma      []float64
 }
 
+type Proposal struct {
+	*ClientProposal
+	client GrpcReplica_ProposeStreamServer
+}
+
 type remoteReplica struct {
-	id       int32
-	address  string
-	shutdown chan bool
-	thrifty  bool
-	exec     bool
-	dreply   bool
-	beacon   bool
-	durable  bool
+	id            int32
+	address       string
+	shutdown      chan bool
+	thrifty       bool
+	exec          bool
+	dreply        bool
+	beacon        bool
+	durable       bool
+	proposeStream GrpcReplica_ProposeStreamClient
 	GrpcReplicaClient
 }
 
@@ -127,8 +137,15 @@ func NewRemoteReplica(id int32, address string) RemoteReplica {
 	return &remoteReplica{id: id, address: address}
 }
 
-func (r *remoteReplica) SetClient(client GrpcReplicaClient) {
-	r.GrpcReplicaClient = client
+func (r *remoteReplica) ProposeStreamServer() GrpcReplica_ProposeStreamClient {
+	var err error
+	if r.proposeStream == nil {
+		r.proposeStream, err = r.ProposeStream(context.Background())
+		if err != nil {
+			log.Fatal("Could not create poposal stream")
+		}
+	}
+	return r.proposeStream
 }
 
 func (r *remoteReplica) Id() int32 {
@@ -235,10 +252,27 @@ func (r *replica) ReplyPing(ctx context.Context, beaconReply *BeaconReply) (*Emp
 	return &Empty{}, nil
 }
 
-func (r *replica) Propose(ctx context.Context, prop *Proposal) (*Empty, error) {
+func (r *replica) Propose(ctx context.Context, prop *ClientProposal) (*Empty, error) {
 	log.WithFields(log.Fields{
 		"proposal received": prop,
 	}).Info("received rpoposal")
-	r.proposals <- prop
+	r.proposals <- &Proposal{prop, nil}
 	return &Empty{}, nil
+}
+
+func (r *remoteReplica) SetClient(client GrpcReplicaClient) {
+	r.GrpcReplicaClient = client
+}
+
+func (r *replica) ProposeStream(stream GrpcReplica_ProposeStreamServer) error {
+	for {
+		cp, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.proposals <- &Proposal{cp, stream}
+	}
 }

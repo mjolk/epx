@@ -12,7 +12,7 @@ It is generated from these files:
 It has these top-level messages:
 	Empty
 	Command
-	Proposal
+	ClientProposal
 	ProposalReply
 	ProposalReplyTS
 	ProposalRead

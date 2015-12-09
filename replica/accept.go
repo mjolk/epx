@@ -123,6 +123,7 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 			for i := 0; i < pLen; i++ {
 				c := i
 				go r.cluster.ReplyProposeTS(
+					inst.lb.clientProposals[c].client,
 					&ProposalReplyTS{
 						false,
 						inst.lb.clientProposals[c].CommandId,

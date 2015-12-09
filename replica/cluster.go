@@ -22,8 +22,9 @@ type Cluster interface {
 	Commit(bool, *TryCommit, *TryCommitShort)
 	Accept(bool, *Acceptance)
 	SetReplicaOrder([]float64)
+	ProposeStream(int32) GrpcReplica_ProposeStreamClient
 	Propose(int32, *Proposal)
-	ReplyProposeTS(*ProposalReplyTS)
+	ReplyProposeTS(GrpcReplica_ProposeStreamServer, *ProposalReplyTS)
 	ReplyPreAccept(int32, *PreAcceptanceReply)
 	PreAcceptanceOk(int32, *PreAcceptanceOk)
 	ReplyAccept(int32, *AcceptanceReply)
@@ -33,7 +34,6 @@ type Cluster interface {
 	ReplyPing(int32, *BeaconReply)
 	Prepare(bool, int32, *Preparation)
 	TryPreAccept(int32, *TryPreAcceptance)
-	Client(string)
 }
 
 type client struct {
@@ -41,40 +41,10 @@ type client struct {
 	GrpcProposeClient
 }
 
-func NewClient(addr string) *client {
-	c := new(client)
-	c.address = addr
-	var opts []grpc.DialOption
-	//var sn string
-	/*if serverHostOverride != "" {
-		sn = serverHostOverride
-	}
-	var creds credentials.TransportAuthenticator
-	if *caFile != "" {
-		var err error
-		creds, err = credentials.NewClientTLSFromFile("mjolk.be.pem", sn)
-		if err != nil {
-			log.Fatalf("Failed to create TLS credentials %v", err)
-		}
-	} else {
-		creds = credentials.NewClientTLSFromCert(nil, sn)
-	}
-	opts = append(opts, grpc.WithTransportCredentials(creds))*/
-	opts = append(opts, grpc.WithInsecure())
-	conn, err := grpc.Dial(c.address, opts...)
-	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
-	}
-	c.GrpcProposeClient = NewGrpcProposeClient(conn)
-	return c
-
-}
-
 type cluster struct {
 	replicas     []RemoteReplica
 	badReplicas  []RemoteReplica
 	replicaOrder []int32
-	client       GrpcProposeClient
 }
 
 func (c *cluster) Replicas() []RemoteReplica {
@@ -131,10 +101,6 @@ func NewCluster(addrs []string) (Cluster, error) {
 	}
 	cluster.replicaOrder = make([]int32, cnt)
 	return cluster, nil
-}
-
-func (c *cluster) Client(addr string) {
-	c.client = NewClient(addr)
 }
 
 func (c *cluster) InitReplicaOrder(r Replica) {
@@ -197,13 +163,6 @@ func (c *cluster) PreAccept(thrifty bool, preAccept *PreAcceptance) {
 	sent := 0
 	ctx := context.Background()
 	for q := 0; q < cLen; q++ {
-		log.WithFields(log.Fields{
-			"replicato":    c.replicaOrder[q],
-			"sent":         sent,
-			"n":            n,
-			"preaccept":    preAccept,
-			"replicaOrder": c.replicaOrder,
-		}).Info("Sending PreAccept")
 		replica := c.replicaOrder[q]
 		go c.Replica(replica).PreAccept(ctx, preAccept)
 		sent++
@@ -223,10 +182,6 @@ func (c *cluster) Commit(thrifty bool, commit *TryCommit, commitShort *TryCommit
 		if thrifty && sent >= n2 {
 			c.Replica(c.replicaOrder[q]).Commit(ctx, commit)
 		} else {
-			log.WithFields(log.Fields{
-				"commit":    commit,
-				"replicaTo": c.replicaOrder[q],
-			}).Info("commit")
 			replica := c.replicaOrder[q]
 			go c.Replica(replica).CommitShort(ctx, commitShort)
 			sent++
@@ -277,13 +232,21 @@ func (c *cluster) ReplicaOrder() []int32 {
 	return c.replicaOrder
 }
 
-func (c *cluster) ReplyProposeTS(reply *ProposalReplyTS) {
+func (c *cluster) ReplyProposeTS(stream GrpcReplica_ProposeStreamServer,
+	reply *ProposalReplyTS) {
 	//send to client who proposed
-	c.client.ReplyProposeTS(context.Background(), reply)
+	//c.client.ReplyProposeTS(context.Background(), reply)
+	if err := stream.Send(reply); err != nil {
+		log.Fatal("err sending proposal reply")
+	}
+}
+
+func (c *cluster) ProposeStream(replica int32) GrpcReplica_ProposeStreamClient {
+	return c.Replica(replica).ProposeStreamServer()
 }
 
 func (c *cluster) Propose(replicaId int32, proposal *Proposal) {
-	c.Replica(replicaId).Propose(context.Background(), proposal)
+	c.Replica(replicaId).Propose(context.Background(), proposal.ClientProposal)
 }
 
 func (c *cluster) ReplyPreAccept(replicaId int32, reply *PreAcceptanceReply) {

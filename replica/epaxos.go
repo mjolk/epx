@@ -17,7 +17,7 @@ const MAX_DEPTH_DEP = 10
 const DS = 5
 const ADAPT_TIME_SEC = 10
 
-const MAX_BATCH = 101
+const MAX_BATCH = 200
 
 const COMMIT_GRACE_PERIOD = 10 * time.Second
 

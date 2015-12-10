@@ -34,7 +34,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "reqs, r",
-			Value: 100,
+			Value: 5000,
 			Usage: "number of requests",
 		},
 		cli.IntFlag{
@@ -67,15 +67,8 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) {
-		f, err := os.OpenFile("logclient.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		log.SetOutput(f)
 		log.Info("starting client")
-		go run(c)
+		run(c)
 	}
 	app.Run(os.Args)
 }
@@ -99,6 +92,8 @@ func run(c *cli.Context) {
 	if err != nil {
 		panic(err)
 	}
+
+	log.Info("starting cluster")
 	cluster.Start()
 
 	log.Info("cluster started")
@@ -137,15 +132,13 @@ func run(c *cli.Context) {
 		}
 	}
 
-	replies := make(chan *replica.ProposalReplyTS, requests)
+	replies := make(chan *replica.ProposalReplyTS)
 
 	var id int32 = 0
 
 	beforeTotal := time.Now()
 
 	for j := 0; j < rounds; j++ {
-
-		before := time.Now()
 
 		for i := 0; i < requestsPr; i++ {
 			proposal := &replica.ClientProposal{
@@ -193,18 +186,17 @@ func run(c *cli.Context) {
 				}
 			}(int32(i))
 		}
+	}
 
-		for reply := range replies {
+	for {
+		select {
+		case reply := <-replies:
 			log.WithFields(log.Fields{
 				"reply": reply,
 			}).Info("received reply")
+
 		}
 
-		after := time.Now()
-
-		log.WithFields(log.Fields{
-			"time": after.Sub(before),
-		}).Info("round done")
 	}
 
 	afterTotal := time.Now()

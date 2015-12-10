@@ -6,6 +6,10 @@ package replica
 
 ***********************************************************************/
 
+import (
+//log "github.com/Sirupsen/logrus"
+)
+
 func equal(deps1 []int32, deps2 []int32) bool {
 	deps1Len := len(deps1)
 	for i := 0; i < deps1Len; i++ {

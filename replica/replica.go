@@ -199,9 +199,11 @@ func (r *remoteReplica) PingStream(ctx context.Context) GrpcReplica_PingClient {
 					reply, err := r.pingStream.Recv()
 					if err == io.EOF {
 						log.Info("pingstream closed")
+						return
 					}
 					if err != nil {
 						log.Info("could not receive ping replies")
+						return
 					}
 					ewma := node.ewma[reply.Replica]
 					node.ewma[reply.Replica] = 0.99*ewma + 0.01*float64(rdtsc.Cputicks()-uint64(reply.Timestamp))
@@ -227,9 +229,11 @@ func (r *remoteReplica) PrepareStream(ctx context.Context) GrpcReplica_PrepareCl
 					reply, err := r.prepareStream.Recv()
 					if err == io.EOF {
 						log.Info("preparestream closed")
+						return
 					}
 					if err != nil {
 						log.Info("could not receive proposal replies")
+						return
 					}
 					node.preparationReplies <- reply
 				}
@@ -253,11 +257,13 @@ func (r *remoteReplica) AcceptStream(ctx context.Context) GrpcReplica_AcceptClie
 					reply, err := r.acceptStream.Recv()
 					if err == io.EOF {
 						log.Info("acceptstream closed")
+						return
 					}
 					if err != nil {
 						log.WithFields(log.Fields{
 							"err": err,
 						}).Info("could not receive accept replies")
+						return
 					}
 					node.acceptanceReplies <- reply
 				}
@@ -281,9 +287,11 @@ func (r *remoteReplica) PreAcceptStream(ctx context.Context) GrpcReplica_PreAcce
 					reply, err := r.preAcceptStream.Recv()
 					if err == io.EOF {
 						log.Info("preacceptstream closed")
+						return
 					}
 					if err != nil {
 						log.Info("could not receive preaccept replies")
+						return
 					}
 					switch reply.Type {
 					case PreAcceptReply_PREACCEPTOK:
@@ -312,9 +320,11 @@ func (r *remoteReplica) TryPreAcceptStream(ctx context.Context) GrpcReplica_TryP
 					reply, err := r.tryPreAcceptStream.Recv()
 					if err == io.EOF {
 						log.Info("tryPreacceptstream closed")
+						return
 					}
 					if err != nil {
 						log.Info("could not receive trypreaccept replies")
+						return
 					}
 					node.tryPreAcceptanceReplies <- reply
 				}

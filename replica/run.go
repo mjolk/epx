@@ -133,6 +133,8 @@ func (r *epaxosReplica) run() {
 		case <-r.shutdown:
 			log.Info("stop")
 			return
+		case <-r.cluster.Context().Done():
+			return
 
 		case proposal := <-proposalSwitch:
 			actionLog("<<PROPOSE", r.id)

@@ -164,11 +164,10 @@ func (c *cluster) PreAccept(thrifty bool, preAccept *PreAcceptance) {
 	if thrifty {
 		n = cLen / 2
 	}
-	ctx, _ := context.WithCancel(c.ctx)
 	sent := 0
 	for q := 0; q < cLen; q++ {
 		replica := c.replicaOrder[q]
-		go c.Replica(replica).PreAcceptStream(ctx).Send(preAccept)
+		go c.Replica(replica).PreAcceptStream(c.ctx).Send(preAccept)
 		sent++
 		if sent >= n {
 			break
@@ -181,14 +180,13 @@ func (c *cluster) Commit(thrifty bool, commit *TryCommit, commitShort *TryCommit
 	n := cLen - 1
 	n2 := cLen / 2
 	sent := 0
-	ctx, _ := context.WithCancel(c.ctx)
 	for q := 0; q < n; q++ {
 		if thrifty && sent >= n2 {
 			replica := c.replicaOrder[q]
-			go c.Replica(replica).CommitStream(ctx).Send(commit)
+			go c.Replica(replica).CommitStream(c.ctx).Send(commit)
 		} else {
 			replica := c.replicaOrder[q]
-			go c.Replica(replica).CommitShortStream(ctx).Send(commitShort)
+			go c.Replica(replica).CommitShortStream(c.ctx).Send(commitShort)
 			sent++
 		}
 	}
@@ -202,13 +200,12 @@ func (c *cluster) Accept(thrifty bool, accept *Acceptance) {
 	}
 
 	sent := 0
-	ctx, _ := context.WithCancel(c.ctx)
 	for q := 0; q < cLen-1; q++ {
 		replica := c.replicaOrder[q]
 		log.WithFields(log.Fields{
 			"toreplica": replica,
 		}).Info("accept to")
-		go c.Replica(replica).AcceptStream(ctx).Send(accept)
+		go c.Replica(replica).AcceptStream(c.ctx).Send(accept)
 		sent++
 		if sent >= n {
 			break
@@ -305,8 +302,7 @@ func (c *cluster) Ping(beacon *Beacon) {
 			continue
 		}
 		r := q
-		ctx, _ := context.WithCancel(c.ctx)
-		go c.Replica(r).PingStream(ctx).
+		go c.Replica(r).PingStream(c.ctx).
 			Send(beacon)
 	}
 }
@@ -327,9 +323,8 @@ func (c *cluster) Prepare(thrifty bool, replica int32, preparation *Preparation)
 		log.WithFields(log.Fields{
 			"replica to": r,
 		}).Info("PREPARE TO")
-		ctx, _ := context.WithCancel(c.ctx)
 		go c.Replica(r).
-			PrepareStream(ctx).
+			PrepareStream(c.ctx).
 			Send(preparation)
 		sent++
 	}
@@ -342,8 +337,7 @@ func (c *cluster) TryPreAccept(replica int32, try *TryPreAcceptance) {
 			continue
 		}
 		replica := c.replicaOrder[q]
-		ctx, _ := context.WithCancel(c.ctx)
-		go c.Replica(replica).TryPreAcceptStream(ctx).
+		go c.Replica(replica).TryPreAcceptStream(c.ctx).
 			Send(try)
 	}
 }

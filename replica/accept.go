@@ -74,7 +74,7 @@ func (r *epaxosReplica) accept(accept *Acceptance) {
 		&AcceptanceReply{
 			accept.Replica,
 			accept.Instance,
-			false,
+			true,
 			accept.Ballot})
 }
 

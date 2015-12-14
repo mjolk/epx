@@ -5,6 +5,7 @@ import (
 	"github.com/mjolk/epx/rdtsc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"io"
 	//"google.golang.org/grpc/credentials"
 )
 
@@ -22,24 +23,15 @@ type Replica interface {
 	Store() Store
 	SetStore(Store)
 	Start()
-	Ping(context.Context, *Beacon) (*Empty, error)
-	ReplyPing(context.Context, *BeaconReply) (*Empty, error)
-	Propose(context.Context, *Proposal) (*Empty, error)
-	ReplyPropose(context.Context, *ProposalReply) (*Empty, error)
-	ReplyProposeTS(context.Context, *ProposalReplyTS) (*Empty, error)
-	ProposeAndRead(context.Context, *ProposalRead) (*Empty, error)
-	ReplyProposeAndRead(context.Context, *ProposalReadReply) (*Empty, error)
-	Prepare(context.Context, *Preparation) (*Empty, error)
-	ReplyPrepare(context.Context, *PreparationReply) (*Empty, error)
-	TryPreAccept(context.Context, *TryPreAcceptance) (*Empty, error)
-	ReplyTryPreAccept(context.Context, *TryPreAcceptanceReply) (*Empty, error)
-	PreAccept(context.Context, *PreAcceptance) (*Empty, error)
-	ReplyPreAccept(context.Context, *PreAcceptanceReply) (*Empty, error)
-	PreAcceptOK(context.Context, *PreAcceptanceOk) (*Empty, error)
-	Accept(context.Context, *Acceptance) (*Empty, error)
-	ReplyAccept(context.Context, *AcceptanceReply) (*Empty, error)
-	Commit(context.Context, *TryCommit) (*Empty, error)
-	CommitShort(context.Context, *TryCommitShort) (*Empty, error)
+	Ping(GrpcReplica_PingServer) error
+	Propose(GrpcReplica_ProposeServer) error
+	ProposeAndRead(GrpcReplica_ProposeAndReadServer) error
+	Prepare(GrpcReplica_PrepareServer) error
+	TryPreAccept(GrpcReplica_TryPreAcceptServer) error
+	PreAccept(GrpcReplica_PreAcceptServer) error
+	Accept(GrpcReplica_AcceptServer) error
+	Commit(GrpcReplica_CommitServer) error
+	CommitShort(GrpcReplica_CommitShortServer) error
 }
 
 type RemoteReplica interface {
@@ -52,24 +44,31 @@ type RemoteReplica interface {
 	IsBeacon() bool
 	IsDurable() bool
 	SetClient(GrpcReplicaClient)
-	Ping(ctx context.Context, in *Beacon, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPing(ctx context.Context, in *BeaconReply, opts ...grpc.CallOption) (*Empty, error)
-	Propose(ctx context.Context, in *Proposal, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPropose(ctx context.Context, in *ProposalReply, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeTS(ctx context.Context, in *ProposalReplyTS, opts ...grpc.CallOption) (*Empty, error)
-	ProposeAndRead(ctx context.Context, in *ProposalRead, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeAndRead(ctx context.Context, in *ProposalReadReply, opts ...grpc.CallOption) (*Empty, error)
-	Prepare(ctx context.Context, in *Preparation, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPrepare(ctx context.Context, in *PreparationReply, opts ...grpc.CallOption) (*Empty, error)
-	TryPreAccept(ctx context.Context, in *TryPreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyTryPreAccept(ctx context.Context, in *TryPreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAccept(ctx context.Context, in *PreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPreAccept(ctx context.Context, in *PreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAcceptOK(ctx context.Context, in *PreAcceptanceOk, opts ...grpc.CallOption) (*Empty, error)
-	Accept(ctx context.Context, in *Acceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyAccept(ctx context.Context, in *AcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	Commit(ctx context.Context, in *TryCommit, opts ...grpc.CallOption) (*Empty, error)
-	CommitShort(ctx context.Context, in *TryCommitShort, opts ...grpc.CallOption) (*Empty, error)
+	Ping(context.Context, ...grpc.CallOption) (GrpcReplica_PingClient, error)
+	Propose(context.Context, ...grpc.CallOption) (GrpcReplica_ProposeClient, error)
+	ProposeAndRead(context.Context, ...grpc.CallOption) (GrpcReplica_ProposeAndReadClient, error)
+	Prepare(context.Context, ...grpc.CallOption) (GrpcReplica_PrepareClient, error)
+	TryPreAccept(context.Context, ...grpc.CallOption) (GrpcReplica_TryPreAcceptClient, error)
+	PreAccept(context.Context, ...grpc.CallOption) (GrpcReplica_PreAcceptClient, error)
+	Accept(context.Context, ...grpc.CallOption) (GrpcReplica_AcceptClient, error)
+	Commit(context.Context, ...grpc.CallOption) (GrpcReplica_CommitClient, error)
+	CommitShort(context.Context, ...grpc.CallOption) (GrpcReplica_CommitShortClient, error)
+	ProposeStream(context.Context) GrpcReplica_ProposeClient
+	PingStream(context.Context) GrpcReplica_PingClient
+	AcceptStream(context.Context) GrpcReplica_AcceptClient
+	PreAcceptStream(context.Context) GrpcReplica_PreAcceptClient
+	TryPreAcceptStream(context.Context) GrpcReplica_TryPreAcceptClient
+	PrepareStream(context.Context) GrpcReplica_PrepareClient
+	CommitStream(context.Context) GrpcReplica_CommitClient
+	CommitShortStream(context.Context) GrpcReplica_CommitShortClient
+	SetIPrepareStream(GrpcReplica_PrepareServer)
+	IPrepareStream() GrpcReplica_PrepareServer
+	IAcceptStream() GrpcReplica_AcceptServer
+	SetIAcceptStream(GrpcReplica_AcceptServer)
+	IPreAcceptStream() GrpcReplica_PreAcceptServer
+	SetIPreAcceptStream(GrpcReplica_PreAcceptServer)
+	ITryPreAcceptStream() GrpcReplica_TryPreAcceptServer
+	SetITryPreAcceptStream(GrpcReplica_TryPreAcceptServer)
 }
 
 //float64func NewReplica(id int32)
@@ -79,7 +78,6 @@ type replica struct {
 	address   string
 	cluster   Cluster
 	store     Store
-	beacons   chan *Beacon
 	proposals chan *Proposal
 	shutdown  chan bool
 	thrifty   bool
@@ -91,15 +89,32 @@ type replica struct {
 }
 
 type remoteReplica struct {
-	id       int32
-	address  string
-	shutdown chan bool
-	thrifty  bool
-	exec     bool
-	dreply   bool
-	beacon   bool
-	durable  bool
+	id                  int32
+	address             string
+	shutdown            chan bool
+	thrifty             bool
+	exec                bool
+	dreply              bool
+	beacon              bool
+	durable             bool
+	proposeStream       GrpcReplica_ProposeClient
+	pingStream          GrpcReplica_PingClient
+	preAcceptStream     GrpcReplica_PreAcceptClient
+	tryPreAcceptStream  GrpcReplica_TryPreAcceptClient
+	acceptStream        GrpcReplica_AcceptClient
+	prepareStream       GrpcReplica_PrepareClient
+	commitStream        GrpcReplica_CommitClient
+	commitShortStream   GrpcReplica_CommitShortClient
+	iPreAcceptStream    GrpcReplica_PreAcceptServer
+	iAcceptStream       GrpcReplica_AcceptServer
+	iPrepareStream      GrpcReplica_PrepareServer
+	iTryPreAcceptStream GrpcReplica_TryPreAcceptServer
 	GrpcReplicaClient
+}
+
+type Proposal struct {
+	*ClientProposal
+	stream GrpcReplica_ProposeServer
 }
 
 func NewReplica(id int32, address string, cluster Cluster) *replica {
@@ -108,7 +123,6 @@ func NewReplica(id int32, address string, cluster Cluster) *replica {
 		id:        id,
 		address:   address,
 		cluster:   cluster,
-		beacons:   make(chan *Beacon, CHAN_BUFFER_SIZE),
 		proposals: make(chan *Proposal, CHAN_BUFFER_SIZE),
 		beacon:    true,
 		exec:      false,
@@ -127,8 +141,221 @@ func NewRemoteReplica(id int32, address string) RemoteReplica {
 	return &remoteReplica{id: id, address: address}
 }
 
-func (r *remoteReplica) SetClient(client GrpcReplicaClient) {
-	r.GrpcReplicaClient = client
+func (r *remoteReplica) SetIPrepareStream(stream GrpcReplica_PrepareServer) {
+	r.iPrepareStream = stream
+}
+
+func (r *remoteReplica) IPrepareStream() GrpcReplica_PrepareServer {
+	return r.iPrepareStream
+}
+func (r *remoteReplica) IAcceptStream() GrpcReplica_AcceptServer {
+	return r.iAcceptStream
+}
+
+func (r *remoteReplica) SetIAcceptStream(stream GrpcReplica_AcceptServer) {
+	r.iAcceptStream = stream
+}
+
+func (r *remoteReplica) IPreAcceptStream() GrpcReplica_PreAcceptServer {
+	return r.iPreAcceptStream
+}
+
+func (r *remoteReplica) SetIPreAcceptStream(stream GrpcReplica_PreAcceptServer) {
+	r.iPreAcceptStream = stream
+}
+
+func (r *remoteReplica) SetITryPreAcceptStream(stream GrpcReplica_TryPreAcceptServer) {
+	r.iTryPreAcceptStream = stream
+}
+
+func (r *remoteReplica) ITryPreAcceptStream() GrpcReplica_TryPreAcceptServer {
+	return r.iTryPreAcceptStream
+}
+
+func (r *remoteReplica) ProposeStream(ctx context.Context) GrpcReplica_ProposeClient {
+	var err error
+	if r.proposeStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.proposeStream, err = r.Propose(c)
+		if err != nil {
+			log.Info("could not create proposestream")
+		}
+	}
+
+	return r.proposeStream
+}
+
+func (r *remoteReplica) PingStream(ctx context.Context) GrpcReplica_PingClient {
+	var err error
+	if r.pingStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.pingStream, err = r.Ping(c)
+		if err != nil {
+			log.Info("Could not create ping stream")
+		}
+		if node := ReplicaFromContext(ctx); node != nil {
+			go func() {
+				for {
+					reply, err := r.pingStream.Recv()
+					if err == io.EOF {
+						log.Info("pingstream closed")
+						return
+					}
+					if err != nil {
+						log.Info("could not receive ping replies")
+						return
+					}
+					ewma := node.ewma[reply.Replica]
+					node.ewma[reply.Replica] = 0.99*ewma + 0.01*float64(rdtsc.Cputicks()-uint64(reply.Timestamp))
+				}
+			}()
+		}
+
+	}
+	return r.pingStream
+}
+
+func (r *remoteReplica) PrepareStream(ctx context.Context) GrpcReplica_PrepareClient {
+	var err error
+	if r.prepareStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.prepareStream, err = r.Prepare(c)
+		if err != nil {
+			log.Info("Could not create prepare stream")
+		}
+		if node := ReplicaFromContext(ctx); node != nil {
+			go func() {
+				for {
+					reply, err := r.prepareStream.Recv()
+					if err == io.EOF {
+						log.Info("preparestream closed")
+						return
+					}
+					if err != nil {
+						log.Info("could not receive proposal replies")
+						return
+					}
+					node.preparationReplies <- reply
+				}
+			}()
+		}
+	}
+	return r.prepareStream
+}
+
+func (r *remoteReplica) AcceptStream(ctx context.Context) GrpcReplica_AcceptClient {
+	var err error
+	if r.acceptStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.acceptStream, err = r.Accept(c)
+		if err != nil {
+			log.Info("Could not create accept stream")
+		}
+		if node := ReplicaFromContext(ctx); node != nil {
+			go func() {
+				for {
+					reply, err := r.acceptStream.Recv()
+					if err == io.EOF {
+						log.Info("acceptstream closed")
+						return
+					}
+					if err != nil {
+						log.WithFields(log.Fields{
+							"err": err,
+						}).Info("could not receive accept replies")
+						return
+					}
+					node.acceptanceReplies <- reply
+				}
+			}()
+		}
+	}
+	return r.acceptStream
+}
+
+func (r *remoteReplica) PreAcceptStream(ctx context.Context) GrpcReplica_PreAcceptClient {
+	var err error
+	if r.preAcceptStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.preAcceptStream, err = r.PreAccept(c)
+		if err != nil {
+			log.Info("Could not create preaccept stream")
+		}
+		if node := ReplicaFromContext(ctx); node != nil {
+			go func() {
+				for {
+					reply, err := r.preAcceptStream.Recv()
+					if err == io.EOF {
+						log.Info("preacceptstream closed")
+						return
+					}
+					if err != nil {
+						log.Info("could not receive preaccept replies")
+						return
+					}
+					switch reply.Type {
+					case PreAcceptReply_PREACCEPTOK:
+						node.preAcceptanceOks <- reply.PreAcceptanceOk
+					case PreAcceptReply_PREACCEPTREPLY:
+						node.preAcceptanceReplies <- reply.PreAcceptanceReply
+					}
+				}
+			}()
+		}
+	}
+	return r.preAcceptStream
+}
+
+func (r *remoteReplica) TryPreAcceptStream(ctx context.Context) GrpcReplica_TryPreAcceptClient {
+	var err error
+	if r.tryPreAcceptStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.tryPreAcceptStream, err = r.TryPreAccept(c)
+		if err != nil {
+			log.Info("Could not create trypreaccept stream")
+		}
+		if node := ReplicaFromContext(ctx); node != nil {
+			go func() {
+				for {
+					reply, err := r.tryPreAcceptStream.Recv()
+					if err == io.EOF {
+						log.Info("tryPreacceptstream closed")
+						return
+					}
+					if err != nil {
+						log.Info("could not receive trypreaccept replies")
+						return
+					}
+					node.tryPreAcceptanceReplies <- reply
+				}
+			}()
+		}
+	}
+	return r.tryPreAcceptStream
+}
+
+func (r *remoteReplica) CommitStream(ctx context.Context) GrpcReplica_CommitClient {
+	var err error
+	if r.commitStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.commitStream, err = r.Commit(c)
+		if err != nil {
+			log.Info("Could not create commit stream")
+		}
+	}
+	return r.commitStream
+}
+
+func (r *remoteReplica) CommitShortStream(ctx context.Context) GrpcReplica_CommitShortClient {
+	var err error
+	if r.commitShortStream == nil {
+		c, _ := context.WithCancel(ctx)
+		r.commitShortStream, err = r.CommitShort(c)
+		if err != nil {
+			log.Info("Could not create commitshort stream")
+		}
+	}
+	return r.commitShortStream
 }
 
 func (r *remoteReplica) Id() int32 {
@@ -186,10 +413,6 @@ func (r *replica) Addr() string {
 	return r.address
 }
 
-func (r *replica) Beacons() chan *Beacon {
-	return r.beacons
-}
-
 func (r *replica) Proposals() chan *Proposal {
 	return r.proposals
 }
@@ -218,27 +441,38 @@ func (r *replica) IsDurable() bool {
 	return r.durable
 }
 
-func (r *replica) Log() {}
-
 func (r *replica) Ewma() []float64 {
 	return r.ewma
 }
 
-func (r *replica) Ping(ctx context.Context, beacon *Beacon) (*Empty, error) {
-	r.beacons <- beacon
-	return &Empty{}, nil
+func (r *replica) Ping(stream GrpcReplica_PingServer) error {
+	for {
+		ping, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if err := stream.Send(&BeaconReply{ping.Timestamp, r.id}); err != nil {
+			return err
+		}
+	}
 }
 
-func (r *replica) ReplyPing(ctx context.Context, beaconReply *BeaconReply) (*Empty, error) {
-	ewma := r.ewma[beaconReply.Replica]
-	r.ewma[beaconReply.Replica] = 0.99*ewma + 0.01*float64(rdtsc.Cputicks()-uint64(beaconReply.Timestamp))
-	return &Empty{}, nil
+func (r *remoteReplica) SetClient(client GrpcReplicaClient) {
+	r.GrpcReplicaClient = client
 }
 
-func (r *replica) Propose(ctx context.Context, prop *Proposal) (*Empty, error) {
-	log.WithFields(log.Fields{
-		"proposal received": prop,
-	}).Info("received rpoposal")
-	r.proposals <- prop
-	return &Empty{}, nil
+func (r *replica) Propose(stream GrpcReplica_ProposeServer) error {
+	for {
+		p, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.proposals <- &Proposal{p, stream}
+	}
 }

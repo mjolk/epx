@@ -74,10 +74,10 @@ func (r *epaxosReplica) findSCC(root *Instance) bool {
 	index := 1
 	//find SCCs using Tarjan's algorithm
 	stack = stack[0:0]
-	return r.strongconnect(root, &index)
+	return r.strongConnect(root, &index)
 }
 
-func (r *epaxosReplica) strongconnect(v *Instance, index *int) bool {
+func (r *epaxosReplica) strongConnect(v *Instance, index *int) bool {
 	v.index = *index
 	v.lowlink = *index
 	*index = *index + 1
@@ -112,7 +112,7 @@ func (r *epaxosReplica) strongconnect(v *Instance, index *int) bool {
 
 			if w.index == 0 {
 				//e.strongconnect(w, index)
-				if !r.strongconnect(w, index) {
+				if !r.strongConnect(w, index) {
 					stackLen := len(stack)
 					for j := l; j < stackLen; j++ {
 						stack[j].index = 0
@@ -146,6 +146,7 @@ func (r *epaxosReplica) strongconnect(v *Instance, index *int) bool {
 				if r.dreply && w.lb != nil && w.lb.clientProposals != nil {
 					indx := idx
 					go r.cluster.ReplyProposeTS(
+						w.lb.clientProposals[indx].stream,
 						&ProposalReplyTS{
 							true,
 							w.lb.clientProposals[indx].CommandId,

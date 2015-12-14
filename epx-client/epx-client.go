@@ -6,9 +6,8 @@ import (
 	"github.com/mjolk/epx/replica"
 	"github.com/mjolk/epx/util"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
+	"io"
 	"math/rand"
-	"net"
 	"os"
 	"time"
 )
@@ -25,8 +24,6 @@ var ports = []string{
 	":10003",
 }
 
-var successful []int
-
 var rarray []int
 
 func main() {
@@ -36,7 +33,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "reqs, r",
-			Value: 100,
+			Value: 5000,
 			Usage: "number of requests",
 		},
 		cli.IntFlag{
@@ -69,21 +66,15 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) {
-		f, err := os.OpenFile("logclient.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-
-		log.SetOutput(f)
 		log.Info("starting client")
-		go run(c)
-		start()
+		run(c)
 	}
 	app.Run(os.Args)
 }
 
 var requests int
+
+var cnt int
 
 func run(c *cli.Context) {
 	requests := c.Int("reqs")
@@ -98,10 +89,14 @@ func run(c *cli.Context) {
 		log.Fatalf("Conflicts percentage must be between 0 and 100.\n")
 	}
 
-	cluster, err := replica.NewCluster(addrs)
+	root := context.Background()
+	ctx, _ := context.WithCancel(root)
+	cluster, err := replica.NewCluster(ctx, addrs)
 	if err != nil {
 		panic(err)
 	}
+
+	log.Info("starting cluster")
 	cluster.Start()
 
 	log.Info("cluster started")
@@ -140,16 +135,32 @@ func run(c *cli.Context) {
 		}
 	}
 
+	replies := make(chan *replica.ProposalReplyTS)
+
 	var id int32 = 0
+	for i := 0; i < N; i++ {
+		stream := cluster.ProposeStream(int32(i))
+		go func(replica int32) {
+			for {
+				reply, err := stream.Recv()
+				if err == io.EOF {
+					log.Info("EOF")
+					return
+				}
+				if err != nil {
+					log.Info("could not read from stream")
+				}
+				replies <- reply
+			}
+		}(int32(i))
+	}
 
 	beforeTotal := time.Now()
 
 	for j := 0; j < rounds; j++ {
 
-		before := time.Now()
-
 		for i := 0; i < requestsPr; i++ {
-			proposal := &replica.Proposal{
+			proposal := &replica.ClientProposal{
 				id,
 				&replica.Command{replica.Command_PUT, "a", []byte("test")},
 				time.Now().Unix(),
@@ -168,21 +179,34 @@ func run(c *cli.Context) {
 				log.WithFields(log.Fields{
 					"proposal": proposal,
 				}).Info("Sending proposal")
-				go cluster.Propose(int32(leader), proposal)
+				go cluster.ProposeStream(int32(leader)).Send(proposal)
 			} else {
 				//send to everyone
 				for rep := 0; rep < N; rep++ {
-					go cluster.Propose(int32(rep), proposal)
+					go cluster.ProposeStream(int32(rep)).Send(proposal)
 				}
 			}
 			id++
 		}
+	}
 
-		after := time.Now()
+	for {
+		select {
+		case reply := <-replies:
+			cnt++
+			log.WithFields(log.Fields{
+				"count":  cnt,
+				"number": requests,
+				"reply":  reply,
+			}).Info("received reply")
 
-		log.WithFields(log.Fields{
-			"time": after.Sub(before),
-		}).Info("round done")
+		default:
+			if cnt == requests {
+				return
+			}
+
+		}
+
 	}
 
 	afterTotal := time.Now()
@@ -190,50 +214,4 @@ func run(c *cli.Context) {
 		"time": afterTotal.Sub(beforeTotal),
 	}).Info("Test done\n")
 
-}
-
-type clientServer struct {
-	replies []*replica.ProposalReplyTS
-}
-
-var reps int
-
-func (r *clientServer) ReplyProposeTS(ctx context.Context, propReplyTS *replica.ProposalReplyTS) (*replica.Empty, error) {
-	r.replies = append(r.replies, propReplyTS)
-	reps++
-	log.WithFields(log.Fields{
-		"replyValue": propReplyTS,
-		"count":      reps,
-	}).Info("Received reply")
-	if reps == requests {
-		log.WithFields(log.Fields{
-			"count": requests,
-		}).Info("Success")
-	}
-	return &replica.Empty{}, nil
-}
-
-func newClientServer() replica.GrpcProposeServer {
-	return &clientServer{
-		make([]*replica.ProposalReplyTS, 0),
-	}
-}
-
-func start() {
-	log.Info("setting up server")
-	lis, err := net.Listen("tcp", ":10000")
-	if err != nil {
-		panic(err)
-	}
-	var opts []grpc.ServerOption
-	//	creds, err := credentials.NewServerTLSFromFile("mjolk.be.crt", "mjolk.be.key")
-	//	if err != nil {
-	//		panic("Failed to generate credentials %v")
-	//	}
-	//	opts = []grpc.ServerOption{grpc.Creds(creds)}
-	grpcServer := grpc.NewServer(opts...)
-	replica.RegisterGrpcProposeServer(grpcServer, newClientServer())
-	if err := grpcServer.Serve(lis); err != nil {
-		panic(err)
-	}
 }

@@ -2,6 +2,35 @@
 // source: grpcreplica.proto
 // DO NOT EDIT!
 
+/*
+Package replica is a generated protocol buffer package.
+
+It is generated from these files:
+	grpcreplica.proto
+
+It has these top-level messages:
+	PreAcceptReply
+	Empty
+	Command
+	ClientProposal
+	ProposalReplyTS
+	ProposalRead
+	ProposalReadReply
+	Beacon
+	BeaconReply
+	PingArgs
+	Preparation
+	PreparationReply
+	PreAcceptance
+	PreAcceptanceReply
+	PreAcceptanceOk
+	Acceptance
+	AcceptanceReply
+	TryCommit
+	TryCommitShort
+	TryPreAcceptance
+	TryPreAcceptanceReply
+*/
 package replica
 
 import proto "github.com/golang/protobuf/proto"
@@ -49,7 +78,28 @@ var Status_value = map[string]int32{
 func (x Status) String() string {
 	return proto.EnumName(Status_name, int32(x))
 }
-func (Status) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (Status) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+type PreAcceptReply_Type int32
+
+const (
+	PreAcceptReply_PREACCEPTREPLY PreAcceptReply_Type = 0
+	PreAcceptReply_PREACCEPTOK    PreAcceptReply_Type = 1
+)
+
+var PreAcceptReply_Type_name = map[int32]string{
+	0: "PREACCEPTREPLY",
+	1: "PREACCEPTOK",
+}
+var PreAcceptReply_Type_value = map[string]int32{
+	"PREACCEPTREPLY": 0,
+	"PREACCEPTOK":    1,
+}
+
+func (x PreAcceptReply_Type) String() string {
+	return proto.EnumName(PreAcceptReply_Type_name, int32(x))
+}
+func (PreAcceptReply_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
 
 type Command_Operation int32
 
@@ -82,7 +132,32 @@ var Command_Operation_value = map[string]int32{
 func (x Command_Operation) String() string {
 	return proto.EnumName(Command_Operation_name, int32(x))
 }
-func (Command_Operation) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{1, 0} }
+func (Command_Operation) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 0} }
+
+type PreAcceptReply struct {
+	Type               PreAcceptReply_Type `protobuf:"varint,1,opt,name=type,enum=replica.PreAcceptReply_Type" json:"type,omitempty"`
+	PreAcceptanceReply *PreAcceptanceReply `protobuf:"bytes,2,opt,name=preAcceptanceReply" json:"preAcceptanceReply,omitempty"`
+	PreAcceptanceOk    *PreAcceptanceOk    `protobuf:"bytes,3,opt,name=preAcceptanceOk" json:"preAcceptanceOk,omitempty"`
+}
+
+func (m *PreAcceptReply) Reset()                    { *m = PreAcceptReply{} }
+func (m *PreAcceptReply) String() string            { return proto.CompactTextString(m) }
+func (*PreAcceptReply) ProtoMessage()               {}
+func (*PreAcceptReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *PreAcceptReply) GetPreAcceptanceReply() *PreAcceptanceReply {
+	if m != nil {
+		return m.PreAcceptanceReply
+	}
+	return nil
+}
+
+func (m *PreAcceptReply) GetPreAcceptanceOk() *PreAcceptanceOk {
+	if m != nil {
+		return m.PreAcceptanceOk
+	}
+	return nil
+}
 
 type Empty struct {
 }
@@ -90,7 +165,7 @@ type Empty struct {
 func (m *Empty) Reset()                    { *m = Empty{} }
 func (m *Empty) String() string            { return proto.CompactTextString(m) }
 func (*Empty) ProtoMessage()               {}
-func (*Empty) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*Empty) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 type Command struct {
 	Operation Command_Operation `protobuf:"varint,1,opt,name=operation,enum=replica.Command_Operation" json:"operation,omitempty"`
@@ -101,35 +176,25 @@ type Command struct {
 func (m *Command) Reset()                    { *m = Command{} }
 func (m *Command) String() string            { return proto.CompactTextString(m) }
 func (*Command) ProtoMessage()               {}
-func (*Command) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*Command) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-type Proposal struct {
+type ClientProposal struct {
 	CommandId int32    `protobuf:"varint,1,opt,name=command_id" json:"command_id,omitempty"`
 	Command   *Command `protobuf:"bytes,2,opt,name=command" json:"command,omitempty"`
 	Timestamp int64    `protobuf:"varint,3,opt,name=timestamp" json:"timestamp,omitempty"`
 }
 
-func (m *Proposal) Reset()                    { *m = Proposal{} }
-func (m *Proposal) String() string            { return proto.CompactTextString(m) }
-func (*Proposal) ProtoMessage()               {}
-func (*Proposal) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (m *ClientProposal) Reset()                    { *m = ClientProposal{} }
+func (m *ClientProposal) String() string            { return proto.CompactTextString(m) }
+func (*ClientProposal) ProtoMessage()               {}
+func (*ClientProposal) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
-func (m *Proposal) GetCommand() *Command {
+func (m *ClientProposal) GetCommand() *Command {
 	if m != nil {
 		return m.Command
 	}
 	return nil
 }
-
-type ProposalReply struct {
-	Ok      bool  `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
-	Command int32 `protobuf:"varint,2,opt,name=command" json:"command,omitempty"`
-}
-
-func (m *ProposalReply) Reset()                    { *m = ProposalReply{} }
-func (m *ProposalReply) String() string            { return proto.CompactTextString(m) }
-func (*ProposalReply) ProtoMessage()               {}
-func (*ProposalReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
 
 type ProposalReplyTS struct {
 	Ok        bool   `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
@@ -141,7 +206,7 @@ type ProposalReplyTS struct {
 func (m *ProposalReplyTS) Reset()                    { *m = ProposalReplyTS{} }
 func (m *ProposalReplyTS) String() string            { return proto.CompactTextString(m) }
 func (*ProposalReplyTS) ProtoMessage()               {}
-func (*ProposalReplyTS) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
+func (*ProposalReplyTS) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 type ProposalRead struct {
 	CommandId int32    `protobuf:"varint,1,opt,name=command_id" json:"command_id,omitempty"`
@@ -152,7 +217,7 @@ type ProposalRead struct {
 func (m *ProposalRead) Reset()                    { *m = ProposalRead{} }
 func (m *ProposalRead) String() string            { return proto.CompactTextString(m) }
 func (*ProposalRead) ProtoMessage()               {}
-func (*ProposalRead) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
+func (*ProposalRead) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *ProposalRead) GetCommand() *Command {
 	if m != nil {
@@ -170,7 +235,7 @@ type ProposalReadReply struct {
 func (m *ProposalReadReply) Reset()                    { *m = ProposalReadReply{} }
 func (m *ProposalReadReply) String() string            { return proto.CompactTextString(m) }
 func (*ProposalReadReply) ProtoMessage()               {}
-func (*ProposalReadReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
+func (*ProposalReadReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 type Beacon struct {
 	Replica   int32  `protobuf:"varint,2,opt,name=replica" json:"replica,omitempty"`
@@ -180,7 +245,7 @@ type Beacon struct {
 func (m *Beacon) Reset()                    { *m = Beacon{} }
 func (m *Beacon) String() string            { return proto.CompactTextString(m) }
 func (*Beacon) ProtoMessage()               {}
-func (*Beacon) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
+func (*Beacon) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 type BeaconReply struct {
 	Timestamp uint64 `protobuf:"varint,1,opt,name=timestamp" json:"timestamp,omitempty"`
@@ -190,7 +255,7 @@ type BeaconReply struct {
 func (m *BeaconReply) Reset()                    { *m = BeaconReply{} }
 func (m *BeaconReply) String() string            { return proto.CompactTextString(m) }
 func (*BeaconReply) ProtoMessage()               {}
-func (*BeaconReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{8} }
+func (*BeaconReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 type PingArgs struct {
 	ActAsLeader int32 `protobuf:"varint,1,opt,name=act_as_leader" json:"act_as_leader,omitempty"`
@@ -199,7 +264,7 @@ type PingArgs struct {
 func (m *PingArgs) Reset()                    { *m = PingArgs{} }
 func (m *PingArgs) String() string            { return proto.CompactTextString(m) }
 func (*PingArgs) ProtoMessage()               {}
-func (*PingArgs) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{9} }
+func (*PingArgs) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 type Preparation struct {
 	Leader   int32 `protobuf:"varint,1,opt,name=leader" json:"leader,omitempty"`
@@ -211,7 +276,7 @@ type Preparation struct {
 func (m *Preparation) Reset()                    { *m = Preparation{} }
 func (m *Preparation) String() string            { return proto.CompactTextString(m) }
 func (*Preparation) ProtoMessage()               {}
-func (*Preparation) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{10} }
+func (*Preparation) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 type PreparationReply struct {
 	Acceptor int32      `protobuf:"varint,1,opt,name=acceptor" json:"acceptor,omitempty"`
@@ -228,7 +293,7 @@ type PreparationReply struct {
 func (m *PreparationReply) Reset()                    { *m = PreparationReply{} }
 func (m *PreparationReply) String() string            { return proto.CompactTextString(m) }
 func (*PreparationReply) ProtoMessage()               {}
-func (*PreparationReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{11} }
+func (*PreparationReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
 func (m *PreparationReply) GetCommands() []*Command {
 	if m != nil {
@@ -250,7 +315,7 @@ type PreAcceptance struct {
 func (m *PreAcceptance) Reset()                    { *m = PreAcceptance{} }
 func (m *PreAcceptance) String() string            { return proto.CompactTextString(m) }
 func (*PreAcceptance) ProtoMessage()               {}
-func (*PreAcceptance) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{12} }
+func (*PreAcceptance) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
 func (m *PreAcceptance) GetCommands() []*Command {
 	if m != nil {
@@ -272,7 +337,7 @@ type PreAcceptanceReply struct {
 func (m *PreAcceptanceReply) Reset()                    { *m = PreAcceptanceReply{} }
 func (m *PreAcceptanceReply) String() string            { return proto.CompactTextString(m) }
 func (*PreAcceptanceReply) ProtoMessage()               {}
-func (*PreAcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{13} }
+func (*PreAcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
 
 type PreAcceptanceOk struct {
 	Instance int32 `protobuf:"varint,1,opt,name=instance" json:"instance,omitempty"`
@@ -281,7 +346,7 @@ type PreAcceptanceOk struct {
 func (m *PreAcceptanceOk) Reset()                    { *m = PreAcceptanceOk{} }
 func (m *PreAcceptanceOk) String() string            { return proto.CompactTextString(m) }
 func (*PreAcceptanceOk) ProtoMessage()               {}
-func (*PreAcceptanceOk) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{14} }
+func (*PreAcceptanceOk) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
 
 type Acceptance struct {
 	Leader   int32   `protobuf:"varint,1,opt,name=leader" json:"leader,omitempty"`
@@ -296,7 +361,7 @@ type Acceptance struct {
 func (m *Acceptance) Reset()                    { *m = Acceptance{} }
 func (m *Acceptance) String() string            { return proto.CompactTextString(m) }
 func (*Acceptance) ProtoMessage()               {}
-func (*Acceptance) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{15} }
+func (*Acceptance) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 type AcceptanceReply struct {
 	Replica  int32 `protobuf:"varint,1,opt,name=replica" json:"replica,omitempty"`
@@ -308,7 +373,7 @@ type AcceptanceReply struct {
 func (m *AcceptanceReply) Reset()                    { *m = AcceptanceReply{} }
 func (m *AcceptanceReply) String() string            { return proto.CompactTextString(m) }
 func (*AcceptanceReply) ProtoMessage()               {}
-func (*AcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{16} }
+func (*AcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
 
 type TryCommit struct {
 	Leader   int32      `protobuf:"varint,1,opt,name=leader" json:"leader,omitempty"`
@@ -322,7 +387,7 @@ type TryCommit struct {
 func (m *TryCommit) Reset()                    { *m = TryCommit{} }
 func (m *TryCommit) String() string            { return proto.CompactTextString(m) }
 func (*TryCommit) ProtoMessage()               {}
-func (*TryCommit) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{17} }
+func (*TryCommit) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
 
 func (m *TryCommit) GetCommands() []*Command {
 	if m != nil {
@@ -343,7 +408,7 @@ type TryCommitShort struct {
 func (m *TryCommitShort) Reset()                    { *m = TryCommitShort{} }
 func (m *TryCommitShort) String() string            { return proto.CompactTextString(m) }
 func (*TryCommitShort) ProtoMessage()               {}
-func (*TryCommitShort) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{18} }
+func (*TryCommitShort) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
 
 type TryPreAcceptance struct {
 	Leader   int32      `protobuf:"varint,1,opt,name=leader" json:"leader,omitempty"`
@@ -358,7 +423,7 @@ type TryPreAcceptance struct {
 func (m *TryPreAcceptance) Reset()                    { *m = TryPreAcceptance{} }
 func (m *TryPreAcceptance) String() string            { return proto.CompactTextString(m) }
 func (*TryPreAcceptance) ProtoMessage()               {}
-func (*TryPreAcceptance) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{19} }
+func (*TryPreAcceptance) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{19} }
 
 func (m *TryPreAcceptance) GetCommands() []*Command {
 	if m != nil {
@@ -381,13 +446,13 @@ type TryPreAcceptanceReply struct {
 func (m *TryPreAcceptanceReply) Reset()                    { *m = TryPreAcceptanceReply{} }
 func (m *TryPreAcceptanceReply) String() string            { return proto.CompactTextString(m) }
 func (*TryPreAcceptanceReply) ProtoMessage()               {}
-func (*TryPreAcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{20} }
+func (*TryPreAcceptanceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{20} }
 
 func init() {
+	proto.RegisterType((*PreAcceptReply)(nil), "replica.PreAcceptReply")
 	proto.RegisterType((*Empty)(nil), "replica.Empty")
 	proto.RegisterType((*Command)(nil), "replica.Command")
-	proto.RegisterType((*Proposal)(nil), "replica.Proposal")
-	proto.RegisterType((*ProposalReply)(nil), "replica.ProposalReply")
+	proto.RegisterType((*ClientProposal)(nil), "replica.ClientProposal")
 	proto.RegisterType((*ProposalReplyTS)(nil), "replica.ProposalReplyTS")
 	proto.RegisterType((*ProposalRead)(nil), "replica.ProposalRead")
 	proto.RegisterType((*ProposalReadReply)(nil), "replica.ProposalReadReply")
@@ -406,6 +471,7 @@ func init() {
 	proto.RegisterType((*TryPreAcceptance)(nil), "replica.TryPreAcceptance")
 	proto.RegisterType((*TryPreAcceptanceReply)(nil), "replica.TryPreAcceptanceReply")
 	proto.RegisterEnum("replica.Status", Status_name, Status_value)
+	proto.RegisterEnum("replica.PreAcceptReply_Type", PreAcceptReply_Type_name, PreAcceptReply_Type_value)
 	proto.RegisterEnum("replica.Command_Operation", Command_Operation_name, Command_Operation_value)
 }
 
@@ -416,24 +482,15 @@ var _ grpc.ClientConn
 // Client API for GrpcReplica service
 
 type GrpcReplicaClient interface {
-	Ping(ctx context.Context, in *Beacon, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPing(ctx context.Context, in *BeaconReply, opts ...grpc.CallOption) (*Empty, error)
-	Propose(ctx context.Context, in *Proposal, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPropose(ctx context.Context, in *ProposalReply, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeTS(ctx context.Context, in *ProposalReplyTS, opts ...grpc.CallOption) (*Empty, error)
-	ProposeAndRead(ctx context.Context, in *ProposalRead, opts ...grpc.CallOption) (*Empty, error)
-	ReplyProposeAndRead(ctx context.Context, in *ProposalReadReply, opts ...grpc.CallOption) (*Empty, error)
-	Prepare(ctx context.Context, in *Preparation, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPrepare(ctx context.Context, in *PreparationReply, opts ...grpc.CallOption) (*Empty, error)
-	TryPreAccept(ctx context.Context, in *TryPreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyTryPreAccept(ctx context.Context, in *TryPreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAccept(ctx context.Context, in *PreAcceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyPreAccept(ctx context.Context, in *PreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	PreAcceptOK(ctx context.Context, in *PreAcceptanceOk, opts ...grpc.CallOption) (*Empty, error)
-	Accept(ctx context.Context, in *Acceptance, opts ...grpc.CallOption) (*Empty, error)
-	ReplyAccept(ctx context.Context, in *AcceptanceReply, opts ...grpc.CallOption) (*Empty, error)
-	Commit(ctx context.Context, in *TryCommit, opts ...grpc.CallOption) (*Empty, error)
-	CommitShort(ctx context.Context, in *TryCommitShort, opts ...grpc.CallOption) (*Empty, error)
+	Ping(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PingClient, error)
+	Propose(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_ProposeClient, error)
+	ProposeAndRead(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_ProposeAndReadClient, error)
+	Prepare(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PrepareClient, error)
+	TryPreAccept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_TryPreAcceptClient, error)
+	PreAccept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PreAcceptClient, error)
+	Accept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_AcceptClient, error)
+	Commit(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_CommitClient, error)
+	CommitShort(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_CommitShortClient, error)
 }
 
 type grpcReplicaClient struct {
@@ -444,551 +501,664 @@ func NewGrpcReplicaClient(cc *grpc.ClientConn) GrpcReplicaClient {
 	return &grpcReplicaClient{cc}
 }
 
-func (c *grpcReplicaClient) Ping(ctx context.Context, in *Beacon, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/Ping", in, out, c.cc, opts...)
+func (c *grpcReplicaClient) Ping(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PingClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[0], c.cc, "/replica.GrpcReplica/Ping", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpcReplicaPingClient{stream}
+	return x, nil
 }
 
-func (c *grpcReplicaClient) ReplyPing(ctx context.Context, in *BeaconReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyPing", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_PingClient interface {
+	Send(*Beacon) error
+	Recv() (*BeaconReply, error)
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) Propose(ctx context.Context, in *Proposal, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/Propose", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaPingClient struct {
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) ReplyPropose(ctx context.Context, in *ProposalReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyPropose", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaPingClient) Send(m *Beacon) error {
+	return x.ClientStream.SendMsg(m)
 }
 
-func (c *grpcReplicaClient) ReplyProposeTS(ctx context.Context, in *ProposalReplyTS, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyProposeTS", in, out, c.cc, opts...)
-	if err != nil {
+func (x *grpcReplicaPingClient) Recv() (*BeaconReply, error) {
+	m := new(BeaconReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return m, nil
 }
 
-func (c *grpcReplicaClient) ProposeAndRead(ctx context.Context, in *ProposalRead, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ProposeAndRead", in, out, c.cc, opts...)
+func (c *grpcReplicaClient) Propose(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_ProposeClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[1], c.cc, "/replica.GrpcReplica/Propose", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpcReplicaProposeClient{stream}
+	return x, nil
 }
 
-func (c *grpcReplicaClient) ReplyProposeAndRead(ctx context.Context, in *ProposalReadReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyProposeAndRead", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_ProposeClient interface {
+	Send(*ClientProposal) error
+	Recv() (*ProposalReplyTS, error)
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) Prepare(ctx context.Context, in *Preparation, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/Prepare", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaProposeClient struct {
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) ReplyPrepare(ctx context.Context, in *PreparationReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyPrepare", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaProposeClient) Send(m *ClientProposal) error {
+	return x.ClientStream.SendMsg(m)
 }
 
-func (c *grpcReplicaClient) TryPreAccept(ctx context.Context, in *TryPreAcceptance, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/TryPreAccept", in, out, c.cc, opts...)
-	if err != nil {
+func (x *grpcReplicaProposeClient) Recv() (*ProposalReplyTS, error) {
+	m := new(ProposalReplyTS)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return m, nil
 }
 
-func (c *grpcReplicaClient) ReplyTryPreAccept(ctx context.Context, in *TryPreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyTryPreAccept", in, out, c.cc, opts...)
+func (c *grpcReplicaClient) ProposeAndRead(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_ProposeAndReadClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[2], c.cc, "/replica.GrpcReplica/ProposeAndRead", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpcReplicaProposeAndReadClient{stream}
+	return x, nil
 }
 
-func (c *grpcReplicaClient) PreAccept(ctx context.Context, in *PreAcceptance, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/PreAccept", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_ProposeAndReadClient interface {
+	Send(*ProposalRead) error
+	Recv() (*ProposalReadReply, error)
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) ReplyPreAccept(ctx context.Context, in *PreAcceptanceReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyPreAccept", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaProposeAndReadClient struct {
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) PreAcceptOK(ctx context.Context, in *PreAcceptanceOk, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/PreAcceptOK", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaProposeAndReadClient) Send(m *ProposalRead) error {
+	return x.ClientStream.SendMsg(m)
 }
 
-func (c *grpcReplicaClient) Accept(ctx context.Context, in *Acceptance, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/Accept", in, out, c.cc, opts...)
-	if err != nil {
+func (x *grpcReplicaProposeAndReadClient) Recv() (*ProposalReadReply, error) {
+	m := new(ProposalReadReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return m, nil
 }
 
-func (c *grpcReplicaClient) ReplyAccept(ctx context.Context, in *AcceptanceReply, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/ReplyAccept", in, out, c.cc, opts...)
+func (c *grpcReplicaClient) Prepare(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PrepareClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[3], c.cc, "/replica.GrpcReplica/Prepare", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpcReplicaPrepareClient{stream}
+	return x, nil
 }
 
-func (c *grpcReplicaClient) Commit(ctx context.Context, in *TryCommit, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/Commit", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_PrepareClient interface {
+	Send(*Preparation) error
+	Recv() (*PreparationReply, error)
+	grpc.ClientStream
 }
 
-func (c *grpcReplicaClient) CommitShort(ctx context.Context, in *TryCommitShort, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := grpc.Invoke(ctx, "/replica.GrpcReplica/CommitShort", in, out, c.cc, opts...)
+type grpcReplicaPrepareClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaPrepareClient) Send(m *Preparation) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaPrepareClient) Recv() (*PreparationReply, error) {
+	m := new(PreparationReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *grpcReplicaClient) TryPreAccept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_TryPreAcceptClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[4], c.cc, "/replica.GrpcReplica/TryPreAccept", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &grpcReplicaTryPreAcceptClient{stream}
+	return x, nil
+}
+
+type GrpcReplica_TryPreAcceptClient interface {
+	Send(*TryPreAcceptance) error
+	Recv() (*TryPreAcceptanceReply, error)
+	grpc.ClientStream
+}
+
+type grpcReplicaTryPreAcceptClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaTryPreAcceptClient) Send(m *TryPreAcceptance) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaTryPreAcceptClient) Recv() (*TryPreAcceptanceReply, error) {
+	m := new(TryPreAcceptanceReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *grpcReplicaClient) PreAccept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_PreAcceptClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[5], c.cc, "/replica.GrpcReplica/PreAccept", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpcReplicaPreAcceptClient{stream}
+	return x, nil
+}
+
+type GrpcReplica_PreAcceptClient interface {
+	Send(*PreAcceptance) error
+	Recv() (*PreAcceptReply, error)
+	grpc.ClientStream
+}
+
+type grpcReplicaPreAcceptClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaPreAcceptClient) Send(m *PreAcceptance) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaPreAcceptClient) Recv() (*PreAcceptReply, error) {
+	m := new(PreAcceptReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *grpcReplicaClient) Accept(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_AcceptClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[6], c.cc, "/replica.GrpcReplica/Accept", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpcReplicaAcceptClient{stream}
+	return x, nil
+}
+
+type GrpcReplica_AcceptClient interface {
+	Send(*Acceptance) error
+	Recv() (*AcceptanceReply, error)
+	grpc.ClientStream
+}
+
+type grpcReplicaAcceptClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaAcceptClient) Send(m *Acceptance) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaAcceptClient) Recv() (*AcceptanceReply, error) {
+	m := new(AcceptanceReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *grpcReplicaClient) Commit(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_CommitClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[7], c.cc, "/replica.GrpcReplica/Commit", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpcReplicaCommitClient{stream}
+	return x, nil
+}
+
+type GrpcReplica_CommitClient interface {
+	Send(*TryCommit) error
+	CloseAndRecv() (*Empty, error)
+	grpc.ClientStream
+}
+
+type grpcReplicaCommitClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaCommitClient) Send(m *TryCommit) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaCommitClient) CloseAndRecv() (*Empty, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Empty)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *grpcReplicaClient) CommitShort(ctx context.Context, opts ...grpc.CallOption) (GrpcReplica_CommitShortClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GrpcReplica_serviceDesc.Streams[8], c.cc, "/replica.GrpcReplica/CommitShort", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpcReplicaCommitShortClient{stream}
+	return x, nil
+}
+
+type GrpcReplica_CommitShortClient interface {
+	Send(*TryCommitShort) error
+	CloseAndRecv() (*Empty, error)
+	grpc.ClientStream
+}
+
+type grpcReplicaCommitShortClient struct {
+	grpc.ClientStream
+}
+
+func (x *grpcReplicaCommitShortClient) Send(m *TryCommitShort) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *grpcReplicaCommitShortClient) CloseAndRecv() (*Empty, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Empty)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // Server API for GrpcReplica service
 
 type GrpcReplicaServer interface {
-	Ping(context.Context, *Beacon) (*Empty, error)
-	ReplyPing(context.Context, *BeaconReply) (*Empty, error)
-	Propose(context.Context, *Proposal) (*Empty, error)
-	ReplyPropose(context.Context, *ProposalReply) (*Empty, error)
-	ReplyProposeTS(context.Context, *ProposalReplyTS) (*Empty, error)
-	ProposeAndRead(context.Context, *ProposalRead) (*Empty, error)
-	ReplyProposeAndRead(context.Context, *ProposalReadReply) (*Empty, error)
-	Prepare(context.Context, *Preparation) (*Empty, error)
-	ReplyPrepare(context.Context, *PreparationReply) (*Empty, error)
-	TryPreAccept(context.Context, *TryPreAcceptance) (*Empty, error)
-	ReplyTryPreAccept(context.Context, *TryPreAcceptanceReply) (*Empty, error)
-	PreAccept(context.Context, *PreAcceptance) (*Empty, error)
-	ReplyPreAccept(context.Context, *PreAcceptanceReply) (*Empty, error)
-	PreAcceptOK(context.Context, *PreAcceptanceOk) (*Empty, error)
-	Accept(context.Context, *Acceptance) (*Empty, error)
-	ReplyAccept(context.Context, *AcceptanceReply) (*Empty, error)
-	Commit(context.Context, *TryCommit) (*Empty, error)
-	CommitShort(context.Context, *TryCommitShort) (*Empty, error)
+	Ping(GrpcReplica_PingServer) error
+	Propose(GrpcReplica_ProposeServer) error
+	ProposeAndRead(GrpcReplica_ProposeAndReadServer) error
+	Prepare(GrpcReplica_PrepareServer) error
+	TryPreAccept(GrpcReplica_TryPreAcceptServer) error
+	PreAccept(GrpcReplica_PreAcceptServer) error
+	Accept(GrpcReplica_AcceptServer) error
+	Commit(GrpcReplica_CommitServer) error
+	CommitShort(GrpcReplica_CommitShortServer) error
 }
 
 func RegisterGrpcReplicaServer(s *grpc.Server, srv GrpcReplicaServer) {
 	s.RegisterService(&_GrpcReplica_serviceDesc, srv)
 }
 
-func _GrpcReplica_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(Beacon)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).Ping(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func _GrpcReplica_Ping_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).Ping(&grpcReplicaPingServer{stream})
 }
 
-func _GrpcReplica_ReplyPing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(BeaconReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyPing(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_PingServer interface {
+	Send(*BeaconReply) error
+	Recv() (*Beacon, error)
+	grpc.ServerStream
 }
 
-func _GrpcReplica_Propose_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(Proposal)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).Propose(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaPingServer struct {
+	grpc.ServerStream
 }
 
-func _GrpcReplica_ReplyPropose_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ProposalReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyPropose(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaPingServer) Send(m *BeaconReply) error {
+	return x.ServerStream.SendMsg(m)
 }
 
-func _GrpcReplica_ReplyProposeTS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ProposalReplyTS)
-	if err := dec(in); err != nil {
+func (x *grpcReplicaPingServer) Recv() (*Beacon, error) {
+	m := new(Beacon)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	out, err := srv.(GrpcReplicaServer).ReplyProposeTS(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return m, nil
 }
 
-func _GrpcReplica_ProposeAndRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ProposalRead)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ProposeAndRead(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func _GrpcReplica_Propose_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).Propose(&grpcReplicaProposeServer{stream})
 }
 
-func _GrpcReplica_ReplyProposeAndRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ProposalReadReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyProposeAndRead(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_ProposeServer interface {
+	Send(*ProposalReplyTS) error
+	Recv() (*ClientProposal, error)
+	grpc.ServerStream
 }
 
-func _GrpcReplica_Prepare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(Preparation)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).Prepare(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaProposeServer struct {
+	grpc.ServerStream
 }
 
-func _GrpcReplica_ReplyPrepare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(PreparationReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyPrepare(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaProposeServer) Send(m *ProposalReplyTS) error {
+	return x.ServerStream.SendMsg(m)
 }
 
-func _GrpcReplica_TryPreAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(TryPreAcceptance)
-	if err := dec(in); err != nil {
+func (x *grpcReplicaProposeServer) Recv() (*ClientProposal, error) {
+	m := new(ClientProposal)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	out, err := srv.(GrpcReplicaServer).TryPreAccept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return m, nil
 }
 
-func _GrpcReplica_ReplyTryPreAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(TryPreAcceptanceReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyTryPreAccept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func _GrpcReplica_ProposeAndRead_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).ProposeAndRead(&grpcReplicaProposeAndReadServer{stream})
 }
 
-func _GrpcReplica_PreAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(PreAcceptance)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).PreAccept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_ProposeAndReadServer interface {
+	Send(*ProposalReadReply) error
+	Recv() (*ProposalRead, error)
+	grpc.ServerStream
 }
 
-func _GrpcReplica_ReplyPreAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(PreAcceptanceReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyPreAccept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type grpcReplicaProposeAndReadServer struct {
+	grpc.ServerStream
 }
 
-func _GrpcReplica_PreAcceptOK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(PreAcceptanceOk)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).PreAcceptOK(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func (x *grpcReplicaProposeAndReadServer) Send(m *ProposalReadReply) error {
+	return x.ServerStream.SendMsg(m)
 }
 
-func _GrpcReplica_Accept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(Acceptance)
-	if err := dec(in); err != nil {
+func (x *grpcReplicaProposeAndReadServer) Recv() (*ProposalRead, error) {
+	m := new(ProposalRead)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	out, err := srv.(GrpcReplicaServer).Accept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return m, nil
 }
 
-func _GrpcReplica_ReplyAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(AcceptanceReply)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).ReplyAccept(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func _GrpcReplica_Prepare_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).Prepare(&grpcReplicaPrepareServer{stream})
 }
 
-func _GrpcReplica_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(TryCommit)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(GrpcReplicaServer).Commit(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+type GrpcReplica_PrepareServer interface {
+	Send(*PreparationReply) error
+	Recv() (*Preparation, error)
+	grpc.ServerStream
 }
 
-func _GrpcReplica_CommitShort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(TryCommitShort)
-	if err := dec(in); err != nil {
+type grpcReplicaPrepareServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaPrepareServer) Send(m *PreparationReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaPrepareServer) Recv() (*Preparation, error) {
+	m := new(Preparation)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	out, err := srv.(GrpcReplicaServer).CommitShort(ctx, in)
-	if err != nil {
+	return m, nil
+}
+
+func _GrpcReplica_TryPreAccept_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).TryPreAccept(&grpcReplicaTryPreAcceptServer{stream})
+}
+
+type GrpcReplica_TryPreAcceptServer interface {
+	Send(*TryPreAcceptanceReply) error
+	Recv() (*TryPreAcceptance, error)
+	grpc.ServerStream
+}
+
+type grpcReplicaTryPreAcceptServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaTryPreAcceptServer) Send(m *TryPreAcceptanceReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaTryPreAcceptServer) Recv() (*TryPreAcceptance, error) {
+	m := new(TryPreAcceptance)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	return out, nil
+	return m, nil
+}
+
+func _GrpcReplica_PreAccept_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).PreAccept(&grpcReplicaPreAcceptServer{stream})
+}
+
+type GrpcReplica_PreAcceptServer interface {
+	Send(*PreAcceptReply) error
+	Recv() (*PreAcceptance, error)
+	grpc.ServerStream
+}
+
+type grpcReplicaPreAcceptServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaPreAcceptServer) Send(m *PreAcceptReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaPreAcceptServer) Recv() (*PreAcceptance, error) {
+	m := new(PreAcceptance)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _GrpcReplica_Accept_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).Accept(&grpcReplicaAcceptServer{stream})
+}
+
+type GrpcReplica_AcceptServer interface {
+	Send(*AcceptanceReply) error
+	Recv() (*Acceptance, error)
+	grpc.ServerStream
+}
+
+type grpcReplicaAcceptServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaAcceptServer) Send(m *AcceptanceReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaAcceptServer) Recv() (*Acceptance, error) {
+	m := new(Acceptance)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _GrpcReplica_Commit_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).Commit(&grpcReplicaCommitServer{stream})
+}
+
+type GrpcReplica_CommitServer interface {
+	SendAndClose(*Empty) error
+	Recv() (*TryCommit, error)
+	grpc.ServerStream
+}
+
+type grpcReplicaCommitServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaCommitServer) SendAndClose(m *Empty) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaCommitServer) Recv() (*TryCommit, error) {
+	m := new(TryCommit)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _GrpcReplica_CommitShort_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GrpcReplicaServer).CommitShort(&grpcReplicaCommitShortServer{stream})
+}
+
+type GrpcReplica_CommitShortServer interface {
+	SendAndClose(*Empty) error
+	Recv() (*TryCommitShort, error)
+	grpc.ServerStream
+}
+
+type grpcReplicaCommitShortServer struct {
+	grpc.ServerStream
+}
+
+func (x *grpcReplicaCommitShortServer) SendAndClose(m *Empty) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *grpcReplicaCommitShortServer) Recv() (*TryCommitShort, error) {
+	m := new(TryCommitShort)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 var _GrpcReplica_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "replica.GrpcReplica",
 	HandlerType: (*GrpcReplicaServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _GrpcReplica_Ping_Handler,
+			StreamName:    "Ping",
+			Handler:       _GrpcReplica_Ping_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ReplyPing",
-			Handler:    _GrpcReplica_ReplyPing_Handler,
+			StreamName:    "Propose",
+			Handler:       _GrpcReplica_Propose_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "Propose",
-			Handler:    _GrpcReplica_Propose_Handler,
+			StreamName:    "ProposeAndRead",
+			Handler:       _GrpcReplica_ProposeAndRead_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ReplyPropose",
-			Handler:    _GrpcReplica_ReplyPropose_Handler,
+			StreamName:    "Prepare",
+			Handler:       _GrpcReplica_Prepare_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ReplyProposeTS",
-			Handler:    _GrpcReplica_ReplyProposeTS_Handler,
+			StreamName:    "TryPreAccept",
+			Handler:       _GrpcReplica_TryPreAccept_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ProposeAndRead",
-			Handler:    _GrpcReplica_ProposeAndRead_Handler,
+			StreamName:    "PreAccept",
+			Handler:       _GrpcReplica_PreAccept_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ReplyProposeAndRead",
-			Handler:    _GrpcReplica_ReplyProposeAndRead_Handler,
+			StreamName:    "Accept",
+			Handler:       _GrpcReplica_Accept_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "Prepare",
-			Handler:    _GrpcReplica_Prepare_Handler,
+			StreamName:    "Commit",
+			Handler:       _GrpcReplica_Commit_Handler,
+			ClientStreams: true,
 		},
 		{
-			MethodName: "ReplyPrepare",
-			Handler:    _GrpcReplica_ReplyPrepare_Handler,
-		},
-		{
-			MethodName: "TryPreAccept",
-			Handler:    _GrpcReplica_TryPreAccept_Handler,
-		},
-		{
-			MethodName: "ReplyTryPreAccept",
-			Handler:    _GrpcReplica_ReplyTryPreAccept_Handler,
-		},
-		{
-			MethodName: "PreAccept",
-			Handler:    _GrpcReplica_PreAccept_Handler,
-		},
-		{
-			MethodName: "ReplyPreAccept",
-			Handler:    _GrpcReplica_ReplyPreAccept_Handler,
-		},
-		{
-			MethodName: "PreAcceptOK",
-			Handler:    _GrpcReplica_PreAcceptOK_Handler,
-		},
-		{
-			MethodName: "Accept",
-			Handler:    _GrpcReplica_Accept_Handler,
-		},
-		{
-			MethodName: "ReplyAccept",
-			Handler:    _GrpcReplica_ReplyAccept_Handler,
-		},
-		{
-			MethodName: "Commit",
-			Handler:    _GrpcReplica_Commit_Handler,
-		},
-		{
-			MethodName: "CommitShort",
-			Handler:    _GrpcReplica_CommitShort_Handler,
+			StreamName:    "CommitShort",
+			Handler:       _GrpcReplica_CommitShort_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
 }
 
-var fileDescriptor1 = []byte{
-	// 960 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xcc, 0x57, 0x5d, 0x8f, 0xdb, 0x44,
-	0x14, 0xad, 0x13, 0x7f, 0xde, 0xec, 0x26, 0xce, 0x94, 0x05, 0x77, 0x91, 0xa0, 0x35, 0x2f, 0x05,
-	0xc1, 0xa2, 0x6e, 0x85, 0x44, 0x05, 0x52, 0xb5, 0x4d, 0xad, 0x82, 0xda, 0x6e, 0x42, 0xd6, 0x15,
-	0xbc, 0x45, 0x5e, 0xc7, 0x2c, 0xd1, 0x26, 0xb1, 0xd7, 0xf6, 0x22, 0xe5, 0x81, 0x07, 0xfe, 0x00,
-	0x0f, 0x48, 0x48, 0x3c, 0xf1, 0x77, 0xf8, 0x5b, 0x5c, 0xcf, 0x8c, 0x9d, 0x71, 0x32, 0x0e, 0xb0,
-	0x5a, 0x24, 0xde, 0x62, 0xcf, 0x3d, 0xf7, 0x1c, 0x9f, 0x3b, 0x77, 0xee, 0x04, 0xfa, 0x17, 0x69,
-	0x12, 0xa6, 0x51, 0x32, 0x9f, 0x85, 0xc1, 0x51, 0x92, 0xc6, 0x79, 0x4c, 0x0c, 0xfe, 0xe8, 0x1a,
-	0xa0, 0x79, 0x8b, 0x24, 0x5f, 0xb9, 0x7f, 0x28, 0x60, 0x0c, 0xe2, 0xc5, 0x22, 0x58, 0x4e, 0xc9,
-	0x27, 0x60, 0xc5, 0x49, 0x94, 0x06, 0xf9, 0x2c, 0x5e, 0x3a, 0xca, 0x7d, 0xe5, 0x61, 0xf7, 0xf8,
-	0xf0, 0xa8, 0x4c, 0xc0, 0x83, 0x8e, 0x86, 0x65, 0x04, 0xe9, 0x40, 0xfb, 0x32, 0x5a, 0x39, 0x2d,
-	0x0c, 0xb4, 0xc8, 0x3e, 0x68, 0x3f, 0x06, 0xf3, 0xeb, 0xc8, 0x69, 0xe3, 0xe3, 0x9e, 0xfb, 0x15,
-	0x58, 0xeb, 0x40, 0x03, 0xda, 0xa7, 0xc3, 0x91, 0x7d, 0xa7, 0xf8, 0x31, 0x7a, 0xe3, 0xdb, 0x4a,
-	0xf1, 0xe3, 0x85, 0xe7, 0xdb, 0x2d, 0x02, 0xa0, 0x3f, 0xf7, 0x5e, 0x79, 0xbe, 0x67, 0xb7, 0x89,
-	0x05, 0xda, 0xf8, 0xd5, 0x70, 0xf0, 0xd2, 0x56, 0x8b, 0x9f, 0xdf, 0xd2, 0x9f, 0x9a, 0xeb, 0x83,
-	0x39, 0x4a, 0xe3, 0x24, 0xce, 0x82, 0x39, 0xc1, 0xf0, 0x90, 0xc9, 0x98, 0xcc, 0xa6, 0x54, 0xa1,
-	0x46, 0x1e, 0x80, 0xc1, 0xdf, 0x51, 0x25, 0x9d, 0x63, 0x7b, 0x53, 0x32, 0xe9, 0x83, 0x95, 0xcf,
-	0x16, 0x51, 0x96, 0x07, 0x8b, 0x84, 0xea, 0x6b, 0xbb, 0x1f, 0xc3, 0x7e, 0x99, 0x75, 0x8c, 0xd1,
-	0x2b, 0xcc, 0xdc, 0x8a, 0x2f, 0x69, 0x4a, 0x93, 0xf4, 0xea, 0x29, 0x35, 0x77, 0x04, 0xbd, 0x5a,
-	0xb4, 0x7f, 0xb6, 0x33, 0x7e, 0xc3, 0x8c, 0x3a, 0xbf, 0x4a, 0xf9, 0xc7, 0xb0, 0xb7, 0xce, 0x18,
-	0x4c, 0x6f, 0xfa, 0x65, 0xbc, 0x04, 0x05, 0x8d, 0xe5, 0x3e, 0x85, 0xbe, 0x98, 0x93, 0x7d, 0x97,
-	0xa0, 0x8d, 0x65, 0x65, 0xc2, 0x65, 0x3a, 0xd1, 0x14, 0xfd, 0x59, 0x14, 0x84, 0x58, 0x31, 0x44,
-	0x71, 0x2a, 0x1e, 0x59, 0xfb, 0x84, 0x22, 0x91, 0xea, 0x3e, 0x82, 0x0e, 0x8b, 0x66, 0x44, 0xdb,
-	0x11, 0x5b, 0x59, 0xdc, 0x07, 0x58, 0xcb, 0xd9, 0xf2, 0xe2, 0x24, 0xbd, 0xc8, 0xc8, 0x01, 0xec,
-	0x07, 0x61, 0x3e, 0x09, 0xb2, 0xc9, 0x1c, 0xc5, 0x46, 0x29, 0x93, 0x87, 0x56, 0x77, 0x46, 0x08,
-	0x0a, 0xf8, 0xd6, 0xe9, 0x82, 0x2e, 0x2e, 0x6f, 0x0b, 0xb3, 0xc1, 0x9c, 0x2d, 0x91, 0x74, 0x19,
-	0xb2, 0xaf, 0xd0, 0x0a, 0xc8, 0x79, 0x30, 0x9f, 0xc7, 0x39, 0xb5, 0x5a, 0x73, 0xff, 0x54, 0xc0,
-	0x16, 0x52, 0x32, 0xb5, 0x08, 0x0b, 0xc2, 0x30, 0x4a, 0xf2, 0xf8, 0x5f, 0x64, 0x66, 0xd6, 0xa9,
-	0xb4, 0xe6, 0x6b, 0x16, 0x8d, 0xae, 0xbd, 0x0f, 0x3a, 0xc6, 0xe6, 0xd7, 0x99, 0xa3, 0xd3, 0xc6,
-	0xe9, 0x55, 0xb5, 0x3a, 0xa3, 0xaf, 0x89, 0x0b, 0x26, 0x2f, 0x44, 0xe6, 0x18, 0xf7, 0xdb, 0x4d,
-	0xe5, 0xcc, 0xa2, 0x2b, 0xc7, 0xe4, 0xfc, 0xea, 0x34, 0x4a, 0x32, 0xc7, 0xc2, 0x60, 0xed, 0x59,
-	0xcb, 0x56, 0xdc, 0xdf, 0x94, 0x62, 0xd7, 0x46, 0x27, 0x54, 0x78, 0xa1, 0xeb, 0x16, 0xec, 0xa9,
-	0xe9, 0xd2, 0x76, 0xeb, 0xd2, 0x6b, 0xba, 0x8c, 0x4a, 0xd7, 0x2f, 0x0a, 0x90, 0x9a, 0xae, 0x6a,
-	0xeb, 0x95, 0x62, 0x94, 0x2d, 0x31, 0x2d, 0xc1, 0xd1, 0xf6, 0x86, 0xa3, 0x4c, 0x18, 0x27, 0xd5,
-	0x6a, 0xa4, 0x7a, 0x49, 0x4a, 0x0e, 0xa1, 0x5b, 0xe8, 0x9e, 0xe5, 0x79, 0x34, 0x9d, 0x6c, 0x08,
-	0xfa, 0xa0, 0xe8, 0x57, 0x41, 0xcf, 0xf0, 0xb2, 0xc6, 0xcd, 0x76, 0xda, 0x4f, 0x00, 0xb7, 0xeb,
-	0x24, 0x76, 0x53, 0x18, 0x5f, 0x2f, 0xcb, 0x1d, 0xf1, 0x37, 0xa6, 0xe1, 0x99, 0x72, 0xbb, 0x86,
-	0xb9, 0x3f, 0x2b, 0x60, 0xf9, 0xe9, 0x6a, 0x40, 0x5d, 0xb9, 0xc9, 0x07, 0x89, 0x5b, 0x41, 0xdd,
-	0xbd, 0x15, 0x1a, 0xaa, 0xe2, 0x5e, 0x41, 0xb7, 0x92, 0x70, 0xf6, 0x43, 0x9c, 0xde, 0x48, 0x47,
-	0x65, 0xe4, 0x3f, 0xd9, 0x08, 0xee, 0xef, 0xd8, 0xdf, 0xc8, 0xf9, 0x7f, 0x6c, 0x0c, 0x3c, 0x7a,
-	0x0e, 0x36, 0xa5, 0xfd, 0x47, 0xe7, 0x8f, 0x03, 0x36, 0x1e, 0xc5, 0xdf, 0x23, 0x3e, 0x9f, 0x94,
-	0x79, 0x98, 0xac, 0x7b, 0xd0, 0xaf, 0x56, 0xaa, 0x84, 0x06, 0x5d, 0x7a, 0x08, 0xbd, 0x6a, 0x89,
-	0x9f, 0x5e, 0xa6, 0xf4, 0xf4, 0xfa, 0xe8, 0x1c, 0x74, 0x7e, 0x8e, 0x99, 0xa0, 0x9e, 0x0e, 0x4f,
-	0x3d, 0x9c, 0xe6, 0x3d, 0x3c, 0xaa, 0xc7, 0xde, 0xc9, 0x60, 0xe0, 0x8d, 0x7c, 0xef, 0x39, 0xb6,
-	0x24, 0x81, 0xae, 0xf0, 0x62, 0xe2, 0x7d, 0x83, 0x03, 0x7e, 0x0f, 0xcc, 0x2a, 0xa2, 0x8d, 0x95,
-	0xb5, 0x06, 0xc3, 0xd7, 0xaf, 0xbf, 0xf6, 0x8b, 0x47, 0xb5, 0x58, 0xf4, 0xbe, 0xf3, 0x06, 0x6f,
-	0x8a, 0x27, 0xed, 0xf8, 0x57, 0x13, 0x3a, 0x2f, 0xf0, 0xca, 0x32, 0x66, 0xd4, 0xe4, 0x43, 0x50,
-	0x8b, 0x69, 0x41, 0xd6, 0x62, 0xd8, 0xbc, 0x39, 0xec, 0x56, 0x2f, 0xd8, 0x1d, 0xe6, 0x0e, 0x79,
-	0x0c, 0x16, 0xf5, 0x95, 0xc6, 0xbf, 0xb5, 0x11, 0x4f, 0x57, 0x24, 0xa0, 0x23, 0x30, 0xd8, 0xbc,
-	0x8c, 0x48, 0xbf, 0x5a, 0x2c, 0x27, 0xa8, 0x24, 0xfe, 0x73, 0xd8, 0x63, 0x24, 0x1c, 0xf4, 0xf6,
-	0x16, 0xa8, 0x89, 0xe9, 0x4b, 0xe8, 0x8a, 0x48, 0xbc, 0x3e, 0x38, 0x72, 0xac, 0x7f, 0x26, 0x41,
-	0x3f, 0x41, 0x5b, 0x19, 0xf0, 0x64, 0x39, 0xa5, 0xb7, 0x85, 0x03, 0x09, 0x3a, 0x98, 0x4a, 0xa0,
-	0x03, 0xb8, 0x2b, 0x12, 0x97, 0xf8, 0x43, 0x29, 0xbe, 0x49, 0xfd, 0xa3, 0xc2, 0xa7, 0x62, 0x7e,
-	0x46, 0x82, 0xb5, 0xc2, 0x44, 0x95, 0x40, 0xbe, 0xa8, 0xac, 0x62, 0xb8, 0x7b, 0x32, 0x5c, 0x13,
-	0x1f, 0x82, 0xc5, 0xa6, 0x11, 0xc0, 0x9b, 0xbd, 0x24, 0x01, 0x7b, 0xd0, 0x67, 0x4e, 0x8a, 0x19,
-	0xde, 0x6b, 0xcc, 0xd0, 0xa4, 0xe1, 0x33, 0xb0, 0xd6, 0x70, 0xb1, 0xd0, 0xbb, 0xd9, 0x9f, 0x56,
-	0x85, 0x2e, 0xb1, 0xef, 0xca, 0xb1, 0x4d, 0xbc, 0x4f, 0xe8, 0xf5, 0x87, 0xc5, 0x0d, 0x5f, 0xd6,
-	0xb6, 0x49, 0x6d, 0x9e, 0x49, 0xa0, 0x9f, 0x82, 0xce, 0x39, 0xef, 0x56, 0x6b, 0x3b, 0xc5, 0x22,
-	0x17, 0x95, 0xc1, 0x51, 0x8e, 0x04, 0xd5, 0xdc, 0x3a, 0x3a, 0x1f, 0x33, 0x44, 0xb4, 0x96, 0xbd,
-	0x93, 0xb6, 0x4e, 0x47, 0x9c, 0x09, 0xef, 0x6c, 0x83, 0xe8, 0xc2, 0x36, 0xf2, 0x5c, 0xa7, 0x7f,
-	0x5c, 0x1e, 0xff, 0x15, 0x00, 0x00, 0xff, 0xff, 0x80, 0xf2, 0x1b, 0x8f, 0xcd, 0x0c, 0x00, 0x00,
+var fileDescriptor0 = []byte{
+	// 971 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xcc, 0x56, 0xdd, 0x6e, 0xdc, 0x44,
+	0x14, 0xae, 0x77, 0xfd, 0xb3, 0x3e, 0x9b, 0xec, 0x3a, 0x43, 0x43, 0x5c, 0x83, 0xa0, 0x1d, 0x6e,
+	0xa2, 0x02, 0x51, 0x9b, 0x5e, 0x20, 0x21, 0x21, 0x48, 0x36, 0x56, 0xa9, 0x9a, 0xc6, 0xcb, 0x66,
+	0x2b, 0x7e, 0x6e, 0x56, 0x8e, 0x77, 0x08, 0x56, 0x76, 0x6d, 0xd7, 0x76, 0x90, 0x72, 0xc1, 0x05,
+	0x2f, 0xc0, 0x1d, 0x12, 0x57, 0xbc, 0x0e, 0x4f, 0xd0, 0xf7, 0x61, 0x3c, 0x33, 0xf6, 0x8e, 0xbd,
+	0x4e, 0x81, 0x28, 0x48, 0xbd, 0xb3, 0xcf, 0xcf, 0x77, 0xbe, 0x39, 0x73, 0xce, 0x99, 0x03, 0x5b,
+	0xe7, 0x69, 0x12, 0xa4, 0x24, 0x59, 0x84, 0x81, 0xbf, 0x97, 0xa4, 0x71, 0x1e, 0x23, 0x43, 0xfc,
+	0xe2, 0xd7, 0x0a, 0x0c, 0xc6, 0x29, 0x39, 0x08, 0x02, 0x92, 0xe4, 0x13, 0x2a, 0xbc, 0x42, 0x0f,
+	0x41, 0xcd, 0xaf, 0x12, 0x62, 0x2b, 0xf7, 0x95, 0xdd, 0xc1, 0xfe, 0xfb, 0x7b, 0xa5, 0x67, 0xdd,
+	0x6c, 0x6f, 0x4a, 0x6d, 0xd0, 0x67, 0x80, 0x92, 0x52, 0xec, 0x47, 0x01, 0x61, 0x2a, 0xbb, 0x43,
+	0x3d, 0xfb, 0xfb, 0xef, 0xad, 0x7b, 0x56, 0x26, 0xe8, 0x31, 0x0c, 0x6b, 0x8e, 0xde, 0x85, 0xdd,
+	0x65, 0x5e, 0x76, 0xbb, 0x97, 0x77, 0x81, 0x3f, 0x06, 0x95, 0xc5, 0x44, 0x94, 0xf1, 0xc4, 0x3d,
+	0x18, 0x8d, 0xdc, 0xf1, 0x74, 0xe2, 0x8e, 0x8f, 0xbf, 0xb7, 0xee, 0xa0, 0x21, 0xf4, 0x2b, 0x99,
+	0xf7, 0xdc, 0x52, 0xb0, 0x01, 0x9a, 0xbb, 0x4c, 0xf2, 0x2b, 0xfc, 0xa7, 0x02, 0xc6, 0x28, 0x5e,
+	0x2e, 0xfd, 0x68, 0x8e, 0x3e, 0x05, 0x33, 0x4e, 0x48, 0xea, 0xe7, 0x61, 0x1c, 0x89, 0xe3, 0x39,
+	0x55, 0x38, 0x61, 0xb4, 0xe7, 0x95, 0x16, 0xa8, 0x0f, 0xdd, 0x0b, 0xc2, 0x4f, 0x63, 0xa2, 0x4d,
+	0xd0, 0x7e, 0xf6, 0x17, 0x97, 0x84, 0xd1, 0xdc, 0xc0, 0x5f, 0x83, 0xb9, 0x32, 0x34, 0xa0, 0x7b,
+	0xe2, 0x8d, 0x29, 0x0d, 0xfa, 0x31, 0x7e, 0x39, 0xb5, 0x94, 0xe2, 0xe3, 0xa9, 0x3b, 0xb5, 0x3a,
+	0x08, 0x40, 0x3f, 0x72, 0x8f, 0xdd, 0xa9, 0x6b, 0x75, 0x91, 0x09, 0xda, 0xe4, 0xd8, 0x1b, 0x3d,
+	0xb7, 0xd4, 0xe2, 0xf3, 0x5b, 0xf6, 0xa9, 0xe1, 0x1f, 0x60, 0x30, 0x5a, 0x84, 0x24, 0xca, 0xc7,
+	0x69, 0x9c, 0xc4, 0x99, 0xbf, 0xa0, 0x07, 0x84, 0x80, 0x93, 0x99, 0x85, 0x73, 0xc6, 0x53, 0x43,
+	0x0f, 0xc0, 0x10, 0x32, 0x91, 0x5d, 0xab, 0x49, 0x1c, 0x6d, 0x81, 0x99, 0x87, 0x4b, 0x92, 0xe5,
+	0xfe, 0x32, 0x61, 0x2c, 0xbb, 0x78, 0x0c, 0xc3, 0x12, 0x95, 0xa5, 0x7d, 0x7a, 0x4a, 0xb1, 0x3b,
+	0xf1, 0x05, 0x03, 0xed, 0xd1, 0xac, 0xd5, 0x40, 0xb5, 0xc6, 0x21, 0xeb, 0x88, 0x2a, 0x43, 0x9c,
+	0xc0, 0xc6, 0x0a, 0xd1, 0x9f, 0xdf, 0x94, 0xab, 0x48, 0x6d, 0x11, 0xc6, 0xc4, 0x5f, 0xc2, 0x96,
+	0x8c, 0xc9, 0x0b, 0x44, 0xe2, 0xc6, 0x51, 0x39, 0xf1, 0x36, 0x9e, 0xf8, 0x13, 0xd0, 0x0f, 0x89,
+	0x1f, 0xd0, 0x9b, 0xa0, 0x5e, 0x22, 0x94, 0xb0, 0xac, 0x1d, 0xa1, 0x00, 0x52, 0xf1, 0x63, 0xe8,
+	0x73, 0x6b, 0x1e, 0x68, 0xdd, 0x62, 0x0d, 0x05, 0x3f, 0x80, 0xde, 0x38, 0x8c, 0xce, 0x0f, 0xd2,
+	0xf3, 0x0c, 0x6d, 0xc3, 0xa6, 0x1f, 0xe4, 0x33, 0x3f, 0x9b, 0x2d, 0x28, 0x59, 0x92, 0x72, 0x7a,
+	0x34, 0xd5, 0x7d, 0x5a, 0xb0, 0x89, 0x2f, 0x4a, 0x62, 0x00, 0xba, 0xac, 0x5e, 0x27, 0x66, 0x41,
+	0x2f, 0x8c, 0x32, 0x56, 0xdb, 0xec, 0x14, 0x5a, 0xe1, 0x72, 0xe6, 0x2f, 0x16, 0x71, 0xce, 0x52,
+	0xad, 0xe1, 0xbf, 0x14, 0xb0, 0x24, 0x48, 0xce, 0x96, 0xba, 0xf9, 0xac, 0x29, 0xe2, 0xff, 0x80,
+	0xcc, 0x53, 0xa7, 0xb2, 0x3b, 0x5f, 0x45, 0xd1, 0x98, 0xee, 0x43, 0xd0, 0xa9, 0x6d, 0x7e, 0x99,
+	0xd9, 0x3a, 0x6b, 0x88, 0x61, 0x75, 0x57, 0xa7, 0x4c, 0x8c, 0x30, 0xf4, 0xc4, 0x45, 0x64, 0xb6,
+	0x71, 0xbf, 0x7b, 0xdd, 0x75, 0x66, 0xe4, 0x95, 0xdd, 0x13, 0xf1, 0xd5, 0x39, 0x49, 0x32, 0xdb,
+	0xa4, 0xc6, 0xda, 0x61, 0x87, 0x36, 0xe3, 0xef, 0x0a, 0x6c, 0xd6, 0xba, 0xf9, 0x16, 0xd2, 0x53,
+	0xe3, 0xa5, 0xbd, 0x99, 0x97, 0x5e, 0xe3, 0x65, 0x54, 0xbc, 0x7e, 0x53, 0x00, 0xb5, 0xcc, 0x26,
+	0x89, 0x8c, 0xb2, 0x46, 0xa6, 0x23, 0x65, 0xb4, 0xdb, 0xc8, 0x28, 0x27, 0x26, 0x82, 0x6a, 0xb5,
+	0xa0, 0x7a, 0x19, 0x14, 0x39, 0x30, 0x28, 0x78, 0x87, 0x79, 0x4e, 0xe6, 0xb3, 0x06, 0xa1, 0x8f,
+	0x8a, 0x7e, 0xad, 0x4d, 0xbd, 0x5a, 0x6c, 0x5e, 0x69, 0xbf, 0x00, 0xdc, 0x6e, 0x26, 0x69, 0x37,
+	0x05, 0xf1, 0x65, 0x54, 0x56, 0xc4, 0x3f, 0x24, 0x8d, 0xce, 0x94, 0xdb, 0x4d, 0x18, 0xfe, 0x55,
+	0x01, 0x73, 0x9a, 0x5e, 0x8d, 0x58, 0x56, 0x6e, 0x72, 0x20, 0xb9, 0x14, 0xd4, 0x37, 0x97, 0xc2,
+	0x35, 0xb7, 0x82, 0x5f, 0xc1, 0xa0, 0xa2, 0x70, 0xfa, 0x53, 0x9c, 0xde, 0x88, 0x47, 0x95, 0xc8,
+	0x7f, 0x53, 0x08, 0xf8, 0x0f, 0xda, 0xdf, 0x34, 0xe6, 0xdb, 0xd8, 0x18, 0x74, 0xf4, 0x6c, 0x37,
+	0xa9, 0xfd, 0x4f, 0xf3, 0xc7, 0x06, 0x8b, 0x8e, 0xe2, 0x1f, 0xa9, 0x7f, 0x3e, 0x2b, 0x71, 0x38,
+	0xad, 0x7b, 0xb0, 0x55, 0x69, 0x2a, 0x40, 0x83, 0xa9, 0x76, 0x61, 0x58, 0xa9, 0xc4, 0xf4, 0xea,
+	0xb5, 0x4e, 0xaf, 0x87, 0x67, 0xa0, 0x8b, 0x39, 0xd6, 0x03, 0xf5, 0xc4, 0x3b, 0x71, 0x1b, 0xcb,
+	0x82, 0x7b, 0x44, 0x5b, 0x52, 0xde, 0x28, 0xdc, 0xa3, 0x99, 0xfb, 0x0d, 0x7d, 0xb8, 0x37, 0xa0,
+	0x57, 0x59, 0x74, 0xe9, 0xcd, 0x9a, 0x23, 0xef, 0xc5, 0x8b, 0x67, 0xd3, 0xe2, 0x57, 0x2d, 0x94,
+	0xee, 0x77, 0xee, 0xe8, 0x65, 0xf1, 0xa7, 0xed, 0xbf, 0x56, 0xa1, 0xff, 0x94, 0xae, 0x58, 0x13,
+	0x1e, 0x1a, 0x3d, 0x01, 0xb5, 0x78, 0x2d, 0xd0, 0x8a, 0x0c, 0x7f, 0x6f, 0x9c, 0xbb, 0x0d, 0x01,
+	0x4b, 0x29, 0xbe, 0xb3, 0xab, 0x3c, 0x52, 0xd0, 0x21, 0x18, 0xfc, 0x11, 0x24, 0x68, 0x67, 0x75,
+	0x5d, 0xb5, 0xc5, 0xc0, 0x91, 0x77, 0xa3, 0xda, 0xab, 0x2e, 0x30, 0x9e, 0x15, 0xbb, 0x1c, 0xc3,
+	0x38, 0x88, 0xe6, 0xec, 0x79, 0xde, 0x6e, 0xf1, 0xf0, 0xe7, 0x8e, 0xd3, 0x2a, 0x96, 0xe9, 0x7c,
+	0x55, 0xd0, 0x29, 0xde, 0x1e, 0x82, 0xee, 0xca, 0x1b, 0x59, 0xf9, 0x1a, 0x39, 0xf7, 0xda, 0xa4,
+	0x32, 0x82, 0x07, 0x1b, 0x72, 0x09, 0xa1, 0x95, 0x43, 0xb3, 0xb2, 0x9c, 0x0f, 0xae, 0x55, 0xd5,
+	0x33, 0x64, 0xae, 0xd0, 0xde, 0x6d, 0x5f, 0x13, 0x9d, 0x9d, 0x6b, 0xd6, 0x55, 0x81, 0xf1, 0x05,
+	0xe8, 0x02, 0xe0, 0x9d, 0xca, 0x50, 0xf2, 0xb6, 0x5b, 0x84, 0xb2, 0xfb, 0x23, 0xd0, 0xc5, 0x94,
+	0x42, 0x32, 0x65, 0x2e, 0x73, 0x06, 0x95, 0x8c, 0xaf, 0x9e, 0xd4, 0x07, 0x7d, 0x0e, 0x7d, 0x79,
+	0xa8, 0xec, 0xac, 0xbb, 0x31, 0x45, 0x9b, 0xef, 0x99, 0xce, 0x76, 0xf5, 0x27, 0x7f, 0x07, 0x00,
+	0x00, 0xff, 0xff, 0xd7, 0x98, 0x8a, 0xa8, 0xc0, 0x0b, 0x00, 0x00,
 }

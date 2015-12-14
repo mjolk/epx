@@ -19,62 +19,36 @@ type Cluster interface {
 	InitReplicaOrder(Replica)
 	UpdateReplicaOrder(Replica, []int32)
 	PreAccept(bool, *PreAcceptance)
+	ReplyAccept(int32, *AcceptanceReply)
+	ReplyProposeTS(GrpcReplica_ProposeServer, *ProposalReplyTS)
+	ReplyPreAccept(int32, *PreAcceptanceReply)
+	ReplyPrepare(int32, *PreparationReply)
+	ReplyTryPreAccept(int32, *TryPreAcceptanceReply)
+	PreAcceptanceOk(int32, *PreAcceptanceOk)
 	Commit(bool, *TryCommit, *TryCommitShort)
 	Accept(bool, *Acceptance)
 	SetReplicaOrder([]float64)
-	Propose(int32, *Proposal)
-	ReplyProposeTS(*ProposalReplyTS)
-	ReplyPreAccept(int32, *PreAcceptanceReply)
-	PreAcceptanceOk(int32, *PreAcceptanceOk)
-	ReplyAccept(int32, *AcceptanceReply)
-	ReplyPrepare(int32, *PreparationReply)
-	ReplyTryPreAccept(int32, *TryPreAcceptanceReply)
 	Ping(*Beacon)
-	ReplyPing(int32, *BeaconReply)
 	Prepare(bool, int32, *Preparation)
 	TryPreAccept(int32, *TryPreAcceptance)
-	Client(string)
-}
-
-type client struct {
-	address string
-	GrpcProposeClient
-}
-
-func NewClient(addr string) *client {
-	c := new(client)
-	c.address = addr
-	var opts []grpc.DialOption
-	//var sn string
-	/*if serverHostOverride != "" {
-		sn = serverHostOverride
-	}
-	var creds credentials.TransportAuthenticator
-	if *caFile != "" {
-		var err error
-		creds, err = credentials.NewClientTLSFromFile("mjolk.be.pem", sn)
-		if err != nil {
-			log.Fatalf("Failed to create TLS credentials %v", err)
-		}
-	} else {
-		creds = credentials.NewClientTLSFromCert(nil, sn)
-	}
-	opts = append(opts, grpc.WithTransportCredentials(creds))*/
-	opts = append(opts, grpc.WithInsecure())
-	conn, err := grpc.Dial(c.address, opts...)
-	if err != nil {
-		log.Fatalf("fail to dial: %v", err)
-	}
-	c.GrpcProposeClient = NewGrpcProposeClient(conn)
-	return c
-
+	SetContext(context.Context)
+	Context() context.Context
+	ProposeStream(int32) GrpcReplica_ProposeClient
 }
 
 type cluster struct {
 	replicas     []RemoteReplica
 	badReplicas  []RemoteReplica
 	replicaOrder []int32
-	client       GrpcProposeClient
+	ctx          context.Context
+}
+
+func (c *cluster) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
+
+func (c *cluster) Context() context.Context {
+	return c.ctx
 }
 
 func (c *cluster) Replicas() []RemoteReplica {
@@ -119,9 +93,10 @@ func (c *cluster) Replica(id int32) RemoteReplica {
 	return nil
 }
 
-func NewCluster(addrs []string) (Cluster, error) {
+func NewCluster(ctx context.Context, addrs []string) (Cluster, error) {
 	cnt := len(addrs)
 	cluster := new(cluster)
+	cluster.ctx = ctx
 	if len(addrs) < 2 {
 		return nil, errors.New("Need at least 3 peers")
 	}
@@ -131,10 +106,6 @@ func NewCluster(addrs []string) (Cluster, error) {
 	}
 	cluster.replicaOrder = make([]int32, cnt)
 	return cluster, nil
-}
-
-func (c *cluster) Client(addr string) {
-	c.client = NewClient(addr)
 }
 
 func (c *cluster) InitReplicaOrder(r Replica) {
@@ -176,12 +147,12 @@ func (c *cluster) connect(replica RemoteReplica, done chan<- int) {
 	var opts []grpc.DialOption
 	//creds, err := credentials.NewClientTLSFromFile("mjolk.be.pem", "mjolk.be")
 	//if err != nil {
-	//	log.Fatalf("Failed to create TLS credentials")
+	//	log.Infof("Failed to create TLS credentials")
 	//}
 	opts = append(opts, grpc.WithInsecure() /*grpc.WithTransportCredentials(creds)*/)
 	conn, err := grpc.Dial(replica.Addr(), opts...)
 	if err != nil {
-		log.Fatalf("fail to dial")
+		log.Infof("fail to dial")
 	}
 	replica.SetClient(NewGrpcReplicaClient(conn))
 	done <- 1
@@ -193,19 +164,10 @@ func (c *cluster) PreAccept(thrifty bool, preAccept *PreAcceptance) {
 	if thrifty {
 		n = cLen / 2
 	}
-
 	sent := 0
-	ctx := context.Background()
 	for q := 0; q < cLen; q++ {
-		log.WithFields(log.Fields{
-			"replicato":    c.replicaOrder[q],
-			"sent":         sent,
-			"n":            n,
-			"preaccept":    preAccept,
-			"replicaOrder": c.replicaOrder,
-		}).Info("Sending PreAccept")
 		replica := c.replicaOrder[q]
-		go c.Replica(replica).PreAccept(ctx, preAccept)
+		go c.Replica(replica).PreAcceptStream(c.ctx).Send(preAccept)
 		sent++
 		if sent >= n {
 			break
@@ -218,17 +180,13 @@ func (c *cluster) Commit(thrifty bool, commit *TryCommit, commitShort *TryCommit
 	n := cLen - 1
 	n2 := cLen / 2
 	sent := 0
-	ctx := context.Background()
 	for q := 0; q < n; q++ {
 		if thrifty && sent >= n2 {
-			c.Replica(c.replicaOrder[q]).Commit(ctx, commit)
-		} else {
-			log.WithFields(log.Fields{
-				"commit":    commit,
-				"replicaTo": c.replicaOrder[q],
-			}).Info("commit")
 			replica := c.replicaOrder[q]
-			go c.Replica(replica).CommitShort(ctx, commitShort)
+			go c.Replica(replica).CommitStream(c.ctx).Send(commit)
+		} else {
+			replica := c.replicaOrder[q]
+			go c.Replica(replica).CommitShortStream(c.ctx).Send(commitShort)
 			sent++
 		}
 	}
@@ -242,10 +200,12 @@ func (c *cluster) Accept(thrifty bool, accept *Acceptance) {
 	}
 
 	sent := 0
-	ctx := context.Background()
 	for q := 0; q < cLen-1; q++ {
 		replica := c.replicaOrder[q]
-		go c.Replica(replica).Accept(ctx, accept)
+		log.WithFields(log.Fields{
+			"toreplica": replica,
+		}).Info("accept to")
+		go c.Replica(replica).AcceptStream(c.ctx).Send(accept)
 		sent++
 		if sent >= n {
 			break
@@ -273,84 +233,111 @@ func (c *cluster) SetReplicaOrder(ewma []float64) {
 	}).Info("setting replicaorder -->>")
 }
 
+//OUT STREAMS :: SEND -> RECEIVE
+
 func (c *cluster) ReplicaOrder() []int32 {
 	return c.replicaOrder
 }
 
-func (c *cluster) ReplyProposeTS(reply *ProposalReplyTS) {
-	//send to client who proposed
-	c.client.ReplyProposeTS(context.Background(), reply)
+func (c *cluster) ProposeStream(replica int32) GrpcReplica_ProposeClient {
+	return c.Replica(replica).ProposeStream(c.ctx)
 }
 
-func (c *cluster) Propose(replicaId int32, proposal *Proposal) {
-	c.Replica(replicaId).Propose(context.Background(), proposal)
+//IN STREAMS :: RECEIVE -> SEND
+
+//TODO switch to client proposal
+func (c *cluster) ReplyProposeTS(stream GrpcReplica_ProposeServer, reply *ProposalReplyTS) {
+	log.Info("send propose reply ------>>>")
+	if err := stream.Send(reply); err != nil {
+		log.Info("err sending proposal reply")
+	}
 }
 
-func (c *cluster) ReplyPreAccept(replicaId int32, reply *PreAcceptanceReply) {
-	c.Replica(replicaId).ReplyPreAccept(context.Background(), reply)
+func (c *cluster) ReplyPreAccept(replica int32, preply *PreAcceptanceReply) {
+	reply := new(PreAcceptReply)
+	reply.Type = PreAcceptReply_PREACCEPTREPLY
+	reply.PreAcceptanceReply = preply
+	if err := c.Replica(replica).IPreAcceptStream().Send(reply); err != nil {
+		log.Info("err sending preaccept reply")
+	}
 }
 
-func (c *cluster) PreAcceptanceOk(replicaId int32, reply *PreAcceptanceOk) {
-	c.Replica(replicaId).PreAcceptOK(context.Background(), reply)
+func (c *cluster) PreAcceptanceOk(replica int32, poreply *PreAcceptanceOk) {
+	reply := new(PreAcceptReply)
+	reply.Type = PreAcceptReply_PREACCEPTOK
+	reply.PreAcceptanceOk = poreply
+	if err := c.Replica(replica).IPreAcceptStream().Send(reply); err != nil {
+		log.Info("err sending preaccept reply")
+	}
 }
 
-func (c *cluster) ReplyAccept(replicaId int32, reply *AcceptanceReply) {
-	c.Replica(replicaId).ReplyAccept(context.Background(), reply)
+func (c *cluster) ReplyAccept(replica int32, reply *AcceptanceReply) {
+	if err := c.Replica(replica).IAcceptStream().Send(reply); err != nil {
+		log.Info("err sending accept reply")
+	}
 }
 
-func (c *cluster) ReplyPrepare(replicaId int32, reply *PreparationReply) {
-	c.Replica(replicaId).ReplyPrepare(context.Background(), reply)
+func (c *cluster) ReplyPrepare(replica int32, reply *PreparationReply) {
+	log.WithFields(log.Fields{
+		"replica": replica,
+		"reply":   reply,
+	}).Info("reply preparation")
+	if err := c.Replica(replica).IPrepareStream().Send(reply); err != nil {
+		log.Info("err sending prepare reply")
+	}
 }
 
-func (c *cluster) ReplyTryPreAccept(replicaId int32, reply *TryPreAcceptanceReply) {
-	c.Replica(replicaId).ReplyTryPreAccept(context.Background(), reply)
+func (c *cluster) ReplyTryPreAccept(replica int32, reply *TryPreAcceptanceReply) {
+	if err := c.Replica(replica).ITryPreAcceptStream().Send(reply); err != nil {
+		log.Info("err sending trypreaccept reply")
+	}
 }
 
 func (c *cluster) Ping(beacon *Beacon) {
 	beacon.Timestamp = rdtsc.Cputicks()
 	cLen := int32(c.Len())
 	var q int32
-	ctx := context.Background()
 	for ; q < cLen; q++ {
 		if q == beacon.Replica {
 			continue
 		}
-		go func(r int32) {
-			c.Replica(r).Ping(ctx, beacon)
-		}(q)
+		r := q
+		go c.Replica(r).PingStream(c.ctx).
+			Send(beacon)
 	}
 }
 
-func (c *cluster) ReplyPing(replicaId int32, beaconReply *BeaconReply) {
-	c.Replica(replicaId).ReplyPing(context.Background(), beaconReply)
-}
-
-func (c *cluster) Prepare(thrifty bool, replicaId int32, preparation *Preparation) {
+func (c *cluster) Prepare(thrifty bool, replica int32, preparation *Preparation) {
 	cLen := c.Len()
 	n := cLen - 1
 	if thrifty {
 		n = cLen / 2
 	}
-	q := replicaId
-	context := context.Background()
+	q := replica
 	for sent := 0; sent < n; {
 		q = (q + 1) % int32(cLen)
-		if q == replicaId {
+		if q == replica {
 			break
 		}
-		c.Replica(c.replicaOrder[q]).Prepare(context, preparation)
+		r := c.replicaOrder[q]
+		log.WithFields(log.Fields{
+			"replica to": r,
+		}).Info("PREPARE TO")
+		go c.Replica(r).
+			PrepareStream(c.ctx).
+			Send(preparation)
 		sent++
 	}
 }
 
-func (c *cluster) TryPreAccept(replicaId int32, try *TryPreAcceptance) {
+func (c *cluster) TryPreAccept(replica int32, try *TryPreAcceptance) {
 	cLen := c.Len()
-	ctx := context.Background()
 	for q := 0; q < cLen; q++ {
-		if int32(q) == replicaId {
+		if int32(q) == replica {
 			continue
 		}
 		replica := c.replicaOrder[q]
-		go c.Replica(replica).TryPreAccept(ctx, try)
+		go c.Replica(replica).TryPreAcceptStream(c.ctx).
+			Send(try)
 	}
 }

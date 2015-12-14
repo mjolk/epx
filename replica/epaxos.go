@@ -6,6 +6,7 @@ import (
 	"github.com/mjolk/epx/bloomfilter"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"io"
 	"math"
 	"net"
 	"os"
@@ -17,7 +18,7 @@ const MAX_DEPTH_DEP = 10
 const DS = 5
 const ADAPT_TIME_SEC = 10
 
-const MAX_BATCH = 101
+const MAX_BATCH = 200
 
 const COMMIT_GRACE_PERIOD = 10 * time.Second
 
@@ -155,6 +156,8 @@ func NewEpaxosReplica(id int32, address string, cluster Cluster) Replica {
 
 	cpMarker = make([]*Command, 0)
 
+	cluster.SetContext(ereplica.newReplicaContext(cluster.Context()))
+
 	return ereplica
 }
 
@@ -188,83 +191,124 @@ func (r *epaxosReplica) Start() {
 	}
 }
 
-func (r *epaxosReplica) ReplyPropose(ctx context.Context, propReply *ProposalReply) (*Empty, error) {
-	log.Info("<<--replypropose")
+/*func (r *epaxosReplica) ProposeAndRead(ctx context.Context, propRead *ProposalRead) (*Empty, error) {
 	return &Empty{}, nil
+}*/
+
+type ctxKey int
+
+const replicaCtx ctxKey = 0
+
+func (r *epaxosReplica) newReplicaContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, replicaCtx, r)
 }
 
-func (r *epaxosReplica) ReplyProposeTS(ctx context.Context, propReplyTS *ProposalReplyTS) (*Empty, error) {
-	log.Info("<<--replyproposeTS")
-	return &Empty{}, nil
+func ReplicaFromContext(ctx context.Context) *epaxosReplica {
+	if replica, ok := ctx.Value(replicaCtx).(*epaxosReplica); ok {
+		return replica
+	}
+	return nil
 }
 
-func (r *epaxosReplica) ProposeAndRead(ctx context.Context, propRead *ProposalRead) (*Empty, error) {
-	return &Empty{}, nil
+func (r *epaxosReplica) Prepare(stream GrpcReplica_PrepareServer) error {
+	for {
+		p, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.cluster.Replica(p.Replica).SetIPrepareStream(stream)
+		r.preparations <- p
+	}
 }
 
-func (r *epaxosReplica) ReplyProposeAndRead(ctx context.Context, propReadReply *ProposalReadReply) (*Empty, error) {
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) Prepare(ctx context.Context, prep *Preparation) (*Empty, error) {
-	r.preparations <- prep
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) ReplyPrepare(ctx context.Context, prepReply *PreparationReply) (*Empty, error) {
-	r.preparationReplies <- prepReply
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) TryPreAccept(ctx context.Context, tryPreAcceptance *TryPreAcceptance) (*Empty, error) {
+func (r *epaxosReplica) TryPreAccept(stream GrpcReplica_TryPreAcceptServer) error {
 	log.Info("<<--trypreaccept")
-	r.tryPreAcceptances <- tryPreAcceptance
-	return &Empty{}, nil
-}
-func (r *epaxosReplica) ReplyTryPreAccept(ctx context.Context, tryPreAcceptanceReply *TryPreAcceptanceReply) (*Empty, error) {
-	log.Info("<<--trypreacceptreply")
-	r.tryPreAcceptanceReplies <- tryPreAcceptanceReply
-	return &Empty{}, nil
+	for {
+		tpa, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.cluster.Replica(tpa.Leader).SetITryPreAcceptStream(stream)
+		r.tryPreAcceptances <- tpa
+	}
 }
 
-func (r *epaxosReplica) PreAccept(ctx context.Context, preAcceptance *PreAcceptance) (*Empty, error) {
+func (r *epaxosReplica) PreAccept(stream GrpcReplica_PreAcceptServer) error {
 	log.Info("<<--preaccept")
-	r.preAcceptances <- preAcceptance
-	return &Empty{}, nil
+	for {
+		pa, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.cluster.Replica(pa.Leader).SetIPreAcceptStream(stream)
+		r.preAcceptances <- pa
+	}
 }
 
-func (r *epaxosReplica) ReplyPreAccept(ctx context.Context, preAcceptanceReply *PreAcceptanceReply) (*Empty, error) {
-	log.Info("<<--preacceptreply <<<-------------------------------------------------------------------------------------------------")
-	r.preAcceptanceReplies <- preAcceptanceReply
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) PreAcceptOK(ctx context.Context, preAcceptanceOk *PreAcceptanceOk) (*Empty, error) {
-	log.Info("<<--preacceptOK")
-	r.preAcceptanceOks <- preAcceptanceOk
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) Accept(ctx context.Context, acceptance *Acceptance) (*Empty, error) {
+func (r *epaxosReplica) Accept(stream GrpcReplica_AcceptServer) error {
 	log.Info("<<--accept")
-	r.acceptances <- acceptance
-	return &Empty{}, nil
+	for {
+		a, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.cluster.Replica(a.Leader).SetIAcceptStream(stream)
+		r.acceptances <- a
+	}
 }
 
-func (r *epaxosReplica) ReplyAccept(ctx context.Context, acceptanceReply *AcceptanceReply) (*Empty, error) {
-	log.Info("<<--acceptreply")
-	r.acceptanceReplies <- acceptanceReply
-	return &Empty{}, nil
-}
-
-func (r *epaxosReplica) Commit(ctx context.Context, tryCommit *TryCommit) (*Empty, error) {
+func (r *epaxosReplica) Commit(stream GrpcReplica_CommitServer) error {
 	log.Info("<<--COMMIT")
-	r.commits <- tryCommit
-	return &Empty{}, nil
+	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.commits <- c
+	}
 }
 
-func (r *epaxosReplica) CommitShort(ctx context.Context, tryCommitShort *TryCommitShort) (*Empty, error) {
+func (r *epaxosReplica) CommitShort(stream GrpcReplica_CommitShortServer) error {
 	log.Info("<<--commmitshort")
-	r.commitsShort <- tryCommitShort
-	return &Empty{}, nil
+	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.commitsShort <- c
+	}
+}
+
+func (r *epaxosReplica) ProposeAndRead(stream GrpcReplica_ProposeAndReadServer) error {
+	log.Info("<<--commmitshort")
+	/*	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		r.commitsShort <- c
+
+	}*/
+	return nil
 }

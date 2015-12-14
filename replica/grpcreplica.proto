@@ -3,24 +3,15 @@ syntax = "proto3";
 package replica;
 
 service GrpcReplica {
-  rpc Ping(Beacon) returns (Empty) {}
-  rpc ReplyPing(BeaconReply) returns (Empty) {}
-  rpc Propose(Proposal) returns (Empty) {}
-  rpc ReplyPropose(ProposalReply) returns (Empty) {}
-  rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
-  rpc ProposeAndRead(ProposalRead) returns (Empty) {}
-  rpc ReplyProposeAndRead(ProposalReadReply) returns (Empty) {}
-  rpc Prepare(Preparation) returns (Empty) {}
-  rpc ReplyPrepare(PreparationReply) returns (Empty) {}
-  rpc TryPreAccept(TryPreAcceptance) returns (Empty) {}
-  rpc ReplyTryPreAccept(TryPreAcceptanceReply) returns (Empty) {}
-  rpc PreAccept(PreAcceptance) returns (Empty) {}
-  rpc ReplyPreAccept(PreAcceptanceReply) returns (Empty) {}
-  rpc PreAcceptOK(PreAcceptanceOk) returns (Empty) {}
-  rpc Accept(Acceptance) returns (Empty) {}
-  rpc ReplyAccept(AcceptanceReply) returns (Empty) {}
-  rpc Commit(TryCommit) returns (Empty) {}
-  rpc CommitShort(TryCommitShort) returns (Empty) {}
+  rpc Ping(stream Beacon) returns (stream BeaconReply) {}
+  rpc Propose(stream ClientProposal) returns (stream ProposalReplyTS) {}
+  rpc ProposeAndRead(stream ProposalRead) returns (stream ProposalReadReply) {}
+  rpc Prepare(stream Preparation) returns (stream PreparationReply) {}
+  rpc TryPreAccept(stream TryPreAcceptance) returns (stream TryPreAcceptanceReply) {}
+  rpc PreAccept(stream PreAcceptance) returns (stream PreAcceptReply) {}
+  rpc Accept(stream Acceptance) returns (stream AcceptanceReply) {}
+  rpc Commit(stream TryCommit) returns (Empty) {}
+  rpc CommitShort(stream TryCommitShort) returns (Empty) {}
 }
 
 enum Status {
@@ -31,6 +22,17 @@ enum Status {
   COMMITTED = 4;
   EXECUTED = 5;
 }
+
+message PreAcceptReply {
+  enum Type { 
+    PREACCEPTREPLY = 0;
+    PREACCEPTOK = 1; 
+  }
+  Type type = 1;
+  PreAcceptanceReply preAcceptanceReply = 2;
+  PreAcceptanceOk preAcceptanceOk= 3;
+}
+
 
 message Empty {}
 
@@ -48,15 +50,10 @@ message Command {
   bytes value = 3; 
 }
 
-message Proposal {
+message ClientProposal {
   int32 command_id = 1;
   Command command = 2;
   int64 timestamp = 3;
-}
-
-message ProposalReply {
-  bool ok = 1;
-  int32 command = 2;
 }
 
 message ProposalReplyTS {

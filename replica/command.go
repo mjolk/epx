@@ -146,7 +146,7 @@ func (r *epaxosReplica) strongConnect(v *Instance, index *int) bool {
 				if r.dreply && w.lb != nil && w.lb.clientProposals != nil {
 					indx := idx
 					go r.cluster.ReplyProposeTS(
-						w.lb.clientProposals[indx].client,
+						w.lb.clientProposals[indx].stream,
 						&ProposalReplyTS{
 							true,
 							w.lb.clientProposals[indx].CommandId,

@@ -3,6 +3,7 @@ package replica
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
+	"golang.org/x/net/context"
 	"time"
 )
 
@@ -10,22 +11,22 @@ var slowTick *time.Ticker
 var fastTick *time.Ticker
 
 func (r *epaxosReplica) stopAdapting() {
-	time.Sleep(1000 * 1000 * 1000 * ADAPT_TIME_SEC)
+	time.Sleep(time.Second * ADAPT_TIME_SEC)
 	slowTick.Stop()
-	time.Sleep(1000 * 1000 * 1000)
+	time.Sleep(time.Second)
 
 	r.cluster.SetReplicaOrder(r.ewma)
 }
 
 var conflicted, weird, slow, happy int
 
-func Start(id int32, port string, addr []string, store Store) (err error) {
+func Start(ctx context.Context, id int32, port string, addr []string, store Store) (err error) {
 	log.WithFields(log.Fields{
 		"replicaId": id,
 		"port":      port,
 	}).Info("Started replica")
 	var cluster Cluster
-	if cluster, err = NewCluster(addr); err != nil {
+	if cluster, err = NewCluster(ctx, addr); err != nil {
 		return errors.New("need at least three replicas")
 	}
 
@@ -121,9 +122,6 @@ func (r *epaxosReplica) run() {
 		case tryPreAcceptanceReply := <-r.tryPreAcceptanceReplies:
 			actionLog("<<TRYPREACCEPTREPLY", r.id)
 			r.tryPreAcceptReply(tryPreAcceptanceReply)
-
-		case beacon := <-r.beacons:
-			go r.cluster.ReplyPing(beacon.Replica, &BeaconReply{beacon.Timestamp, r.id})
 
 		case <-slow:
 			actionLog("PING", r.id)

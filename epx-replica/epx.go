@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/codegangsta/cli"
 	"github.com/mjolk/epx/replica"
+	"golang.org/x/net/context"
 	"os"
 )
 
@@ -31,7 +32,9 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		var id int = c.Int("replica")
-		if err := replica.Start(int32(id), ports[id], addrs,
+		ctx := context.Background()
+		ctxc, _ := context.WithCancel(ctx)
+		if err := replica.Start(ctxc, int32(id), ports[id], addrs,
 			replica.NewTestStore(5000)); err != nil {
 			panic(err)
 		}

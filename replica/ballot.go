@@ -1,6 +1,8 @@
 package replica
 
-import ()
+import (
+	log "github.com/Sirupsen/logrus"
+)
 
 func UniqueBallot(r Replica, ballot int32) int32 {
 	return (ballot << 4) | r.Id()
@@ -49,6 +51,7 @@ func (r *epaxosReplica) bcastAccept(replica int32, instance int32, ballot int32,
 	ea.Seq = seq
 	ea.Deps = deps
 
+	log.Info("cast accept")
 	go r.cluster.Accept(r.thrifty, ea)
 
 }

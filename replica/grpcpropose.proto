@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import "grpcreplica.proto";
-
-package replica;
-
-service GrpcPropose {
-  rpc ReplyProposeTS(ProposalReplyTS) returns (Empty) {}
-}

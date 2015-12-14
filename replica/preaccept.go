@@ -183,7 +183,7 @@ func (r *epaxosReplica) preAcceptReply(pareply *PreAcceptanceReply) {
 			for i := 0; i < cnt; i++ {
 				c := i
 				go r.cluster.ReplyProposeTS(
-					inst.lb.clientProposals[c].client,
+					inst.lb.clientProposals[c].stream,
 					&ProposalReplyTS{
 						true,
 						inst.lb.clientProposals[c].CommandId,
@@ -255,7 +255,7 @@ func (r *epaxosReplica) preAcceptOK(pareply *PreAcceptanceOk) {
 			for i := 0; i < pLen; i++ {
 				c := i
 				go r.cluster.ReplyProposeTS(
-					inst.lb.clientProposals[c].client,
+					inst.lb.clientProposals[c].stream,
 					&ProposalReplyTS{
 						true,
 						inst.lb.clientProposals[c].CommandId,

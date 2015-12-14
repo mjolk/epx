@@ -5,9 +5,8 @@ package replica
                       RECOVERY ACTIONS
 
 ***********************************************************************/
-
 import (
-//log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 )
 
 func equal(deps1 []int32, deps2 []int32) bool {
@@ -176,12 +175,14 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 	if inst.lb == nil || !inst.lb.preparing {
 		// we've moved on -- these are delayed replies, so just ignore
 		// TODO: should replies for non-current ballots be ignored?
+		log.Info("delayed replies?")
 		return
 	}
 
 	if !preply.Ok {
 		// TODO: there is probably another active leader, back off and retry later
 		inst.lb.nacks++
+		log.Info("another active leader?")
 		return
 	}
 
@@ -197,6 +198,7 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 			preply.Seq,
 			preply.Deps,
 			nil, 0, 0, nil}
+		log.Info("bcastcommit")
 		r.bcastCommit(preply.Replica, preply.Instance, inst.commands, preply.Seq, preply.Deps)
 		//TODO: check if we should send notifications to clients
 		return
@@ -231,6 +233,7 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 	cLen := r.cluster.Len()
 
 	if inst.lb.prepareOKs < cLen/2 {
+		log.Info("no enough prepareOks RETURN")
 		return
 	}
 
@@ -248,6 +251,7 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 			inst.deps = ir.deps
 			inst.status = Status_ACCEPTED
 			inst.lb.preparing = false
+			log.Info("bcastaccept")
 			r.bcastAccept(preply.Replica, preply.Instance, inst.ballot, int32(len(inst.commands)), inst.seq, inst.deps)
 		} else if !ir.leaderResponded && ir.preAcceptCount >= (cLen/2+1)/2 {
 			//send TryPreAccepts
@@ -276,9 +280,11 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 			}
 			inst.lb.preparing = false
 			inst.lb.tryingToPreAccept = true
+			log.Info("bcastTrypreAccept")
 			r.bcastTryPreAccept(preply.Replica, preply.Instance, inst.ballot, inst.commands, inst.seq, inst.deps)
 		} else {
 			//start Phase1 in the initial leader's instance
+			log.Info("start phase 1")
 			inst.lb.preparing = false
 			r.startPhase1(preply.Replica, preply.Instance, inst.ballot, inst.lb.clientProposals, ir.cmds, len(ir.cmds))
 		}
@@ -295,6 +301,7 @@ func (r *epaxosReplica) prepareReply(preply *PreparationReply) {
 			0,
 			noop_deps,
 			inst.lb, 0, 0, nil}
+		log.Info("bcastaccept NO-OP")
 		r.bcastAccept(preply.Replica, preply.Instance, inst.ballot, 0, 0, noop_deps)
 	}
 }

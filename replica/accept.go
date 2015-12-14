@@ -37,7 +37,8 @@ func (r *epaxosReplica) accept(accept *Acceptance) {
 				"accept.ballot": accept.Ballot,
 				"inst.ballot":   inst.ballot,
 			}).Info("REPLYACCEPT")
-			go r.cluster.ReplyAccept(accept.Leader, &AcceptanceReply{accept.Replica, accept.Instance, false, inst.ballot})
+			go r.cluster.ReplyAccept(accept.Leader,
+				&AcceptanceReply{accept.Replica, accept.Instance, false, inst.ballot})
 			return
 		}
 		inst.status = Status_ACCEPTED
@@ -123,7 +124,7 @@ func (r *epaxosReplica) acceptReply(areply *AcceptanceReply) {
 			for i := 0; i < pLen; i++ {
 				c := i
 				go r.cluster.ReplyProposeTS(
-					inst.lb.clientProposals[c].client,
+					inst.lb.clientProposals[c].stream,
 					&ProposalReplyTS{
 						false,
 						inst.lb.clientProposals[c].CommandId,

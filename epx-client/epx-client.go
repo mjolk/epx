@@ -5,6 +5,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/mjolk/epx/replica"
 	"github.com/mjolk/epx/util"
+	"golang.org/x/net/context"
 	"io"
 	"math/rand"
 	"os"
@@ -23,8 +24,6 @@ var ports = []string{
 	":10003",
 }
 
-var successful []int
-
 var rarray []int
 
 func main() {
@@ -34,7 +33,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:  "reqs, r",
-			Value: 5000,
+			Value: 200,
 			Usage: "number of requests",
 		},
 		cli.IntFlag{
@@ -75,6 +74,8 @@ func main() {
 
 var requests int
 
+var cnt int
+
 func run(c *cli.Context) {
 	requests := c.Int("reqs")
 	rounds := c.Int("rounds")
@@ -88,7 +89,9 @@ func run(c *cli.Context) {
 		log.Fatalf("Conflicts percentage must be between 0 and 100.\n")
 	}
 
-	cluster, err := replica.NewCluster(addrs)
+	root := context.Background()
+	ctx, _ := context.WithCancel(root)
+	cluster, err := replica.NewCluster(ctx, addrs)
 	if err != nil {
 		panic(err)
 	}
@@ -135,6 +138,22 @@ func run(c *cli.Context) {
 	replies := make(chan *replica.ProposalReplyTS)
 
 	var id int32 = 0
+	for i := 0; i < N; i++ {
+		stream := cluster.ProposeStream(int32(i))
+		go func(replica int32) {
+			for {
+				reply, err := stream.Recv()
+				if err == io.EOF {
+					log.Info("EOF")
+					return
+				}
+				if err != nil {
+					log.Info("could not read from stream")
+				}
+				replies <- reply
+			}
+		}(int32(i))
+	}
 
 	beforeTotal := time.Now()
 
@@ -169,31 +188,22 @@ func run(c *cli.Context) {
 			}
 			id++
 		}
-
-		for i := 0; i < N; i++ {
-			stream := cluster.ProposeStream(int32(i))
-			go func(replica int32) {
-				for {
-					reply, err := stream.Recv()
-					if err == io.EOF {
-						log.Info("EOF")
-						return
-					}
-					if err != nil {
-						log.Info("could not read from stream")
-					}
-					replies <- reply
-				}
-			}(int32(i))
-		}
 	}
 
 	for {
 		select {
 		case reply := <-replies:
+			cnt++
 			log.WithFields(log.Fields{
-				"reply": reply,
+				"count":  cnt,
+				"number": requests,
+				"reply":  reply,
 			}).Info("received reply")
+
+		default:
+			if cnt == requests {
+				return
+			}
 
 		}
 

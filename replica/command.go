@@ -139,10 +139,10 @@ func (r *epaxosReplica) strongConnect(v *Instance, index *int) bool {
 		sort.Sort(nodeArray(list))
 		for _, w := range list {
 			for w.commands == nil {
-				time.Sleep(1000 * 1000)
+				time.Sleep(time.Millisecond)
 			}
-			for idx := 0; idx < len(w.commands); idx++ {
-				val := w.commands[idx].Execute(r.store)
+			for idx, cmd := range w.commands {
+				val := cmd.Execute(r.store)
 				if r.dreply && w.lb != nil && w.lb.clientProposals != nil {
 					indx := idx
 					go r.cluster.ReplyProposeTS(
@@ -186,44 +186,36 @@ func (na nodeArray) Swap(i, j int) {
 
 func (r *epaxosReplica) sweepInstanceSpace() {
 	cLen := r.cluster.Len()
-	var executed bool
-	for {
-		executed = false
-		for q := 0; q < cLen; q++ {
-			inst := int32(0)
-			for inst = r.executedUpTo[q] + 1; inst < r.crtInstance[q]; inst++ {
-				if r.instanceSpace[q][inst] != nil && r.instanceSpace[q][inst].status == Status_EXECUTED {
-					if inst == r.executedUpTo[q]+1 {
-						r.executedUpTo[q] = inst
-					}
-					continue
+	for q := 0; q < cLen; q++ {
+		inst := int32(0)
+		for inst = r.executedUpTo[q] + 1; inst < r.crtInstance[q]; inst++ {
+			if r.instanceSpace[q][inst] != nil && r.instanceSpace[q][inst].status == Status_EXECUTED {
+				if inst == r.executedUpTo[q]+1 {
+					r.executedUpTo[q] = inst
 				}
-				if r.instanceSpace[q][inst] == nil || r.instanceSpace[q][inst].status != Status_COMMITTED {
-					if inst == r.problemInstances[q] {
-						r.clusterTimeouts[q] += time.Millisecond
-						if r.clusterTimeouts[q] >= COMMIT_GRACE_PERIOD {
-							r.recoveryInstances <- &instanceId{int32(q), inst}
-							r.clusterTimeouts[q] = 0
-						}
-					} else {
-						r.problemInstances[q] = inst
+				continue
+			}
+			if r.instanceSpace[q][inst] == nil || r.instanceSpace[q][inst].status != Status_COMMITTED {
+				if inst == r.problemInstances[q] {
+					r.clusterTimeouts[q] += time.Millisecond
+					if r.clusterTimeouts[q] >= COMMIT_GRACE_PERIOD {
+						r.recoveryInstances <- &instanceId{int32(q), inst}
 						r.clusterTimeouts[q] = 0
 					}
-					if r.instanceSpace[q][inst] == nil {
-						continue
-					}
-					break
+				} else {
+					r.problemInstances[q] = inst
+					r.clusterTimeouts[q] = 0
 				}
-				if ok := r.executeCommand(int32(q), inst); ok {
-					executed = true
-					if inst == r.executedUpTo[q]+1 {
-						r.executedUpTo[q] = inst
-					}
+				if r.instanceSpace[q][inst] == nil {
+					continue
+				}
+				break
+			}
+			if ok := r.executeCommand(int32(q), inst); ok {
+				if inst == r.executedUpTo[q]+1 {
+					r.executedUpTo[q] = inst
 				}
 			}
-		}
-		if !executed {
-			time.Sleep(time.Millisecond)
 		}
 	}
 }
@@ -236,7 +228,14 @@ func (r *epaxosReplica) executeCommands() {
 		r.problemInstances[q] = -1
 		r.clusterTimeouts[q] = 0
 	}
-	r.sweepInstanceSpace()
+	sweeper := time.NewTicker(time.Millisecond * 50).C
+
+	for {
+		select {
+		case <-sweeper:
+			r.sweepInstanceSpace()
+		}
+	}
 	log.Info("command execution terminated")
 }
 

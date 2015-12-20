@@ -202,16 +202,15 @@ func run(c *cli.Context) {
 
 		default:
 			if cnt == requests {
+				afterTotal := time.Now()
+				log.WithFields(log.Fields{
+					"time": afterTotal.Sub(beforeTotal),
+				}).Info("Test done\n")
 				return
 			}
 
 		}
 
 	}
-
-	afterTotal := time.Now()
-	log.WithFields(log.Fields{
-		"time": afterTotal.Sub(beforeTotal),
-	}).Info("Test done\n")
 
 }

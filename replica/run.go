@@ -52,7 +52,7 @@ func (r *epaxosReplica) run() {
 		go r.executeCommands()
 	}
 
-	if r.Id() == 0 {
+	if r.id == 0 {
 		//init quorum read lease
 		quorum := make([]int32, clusterSize/2+1)
 		for i := 0; i <= clusterSize/2; i++ {

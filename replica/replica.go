@@ -9,6 +9,9 @@ import (
 	//"google.golang.org/grpc/credentials"
 )
 
+//TODO refactor remotereplica with parent field, remove all nonsense storing local node in context.
+//TODO refactor stream management
+
 const CHAN_BUFFER_SIZE = 200000
 
 type Replica interface {

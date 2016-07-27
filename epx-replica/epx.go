@@ -34,7 +34,7 @@ func main() {
 		var id int = c.Int("replica")
 		ctx := context.Background()
 		ctxc, _ := context.WithCancel(ctx)
-		if err := replica.Start(ctxc, int32(id), ports[id], addrs,
+		if err := replica.Create(ctxc, int32(id), addrs,
 			replica.NewTestStore(5000)); err != nil {
 			panic(err)
 		}

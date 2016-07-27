@@ -9,6 +9,10 @@ import (
 	//	"google.golang.org/grpc/credentials"
 )
 
+//TODO refactor connect sequence, let only one node connect to all the others; the streams are bidirectional,
+//1 stream between each replica is enough => will consume only a connection per peer
+//TODO make stream handling more robust
+
 type Cluster interface {
 	Replicas() []RemoteReplica
 	Len() int

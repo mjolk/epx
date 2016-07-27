@@ -2,8 +2,10 @@ package replica
 
 import (
 	"errors"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
+	"strings"
 	"time"
 )
 
@@ -20,20 +22,23 @@ func (r *epaxosReplica) stopAdapting() {
 
 var conflicted, weird, slow, happy int
 
-func Start(ctx context.Context, id int32, port string, addr []string, store Store) (err error) {
+func Create(ctx context.Context, id int32, addr []string, store Store) (err error) {
 	log.WithFields(log.Fields{
 		"replicaId": id,
-		"port":      port,
 	}).Info("Started replica")
 	var cluster Cluster
 	if cluster, err = NewCluster(ctx, addr); err != nil {
 		return errors.New("need at least three replicas")
 	}
 
-	//	cluster.Client(client)
 	cluster.Start()
+	addresses := make([][]string, len(addr))
 
-	replica := NewEpaxosReplica(id, port, cluster)
+	for i, a := range addr {
+		addresses[i] = strings.Split(a, ":")
+	}
+
+	replica := NewEpaxosReplica(id, fmt.Sprintf(":%s", addresses[id][1]), cluster)
 	replica.SetStore(store)
 	replica.Start()
 

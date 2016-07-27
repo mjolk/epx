@@ -228,7 +228,7 @@ func (r *epaxosReplica) executeCommands() {
 		r.problemInstances[q] = -1
 		r.clusterTimeouts[q] = 0
 	}
-	sweeper := time.NewTicker(time.Millisecond * 50).C
+	sweeper := time.NewTicker(time.Millisecond * 5).C
 
 	for {
 		select {

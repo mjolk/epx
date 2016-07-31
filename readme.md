@@ -2,7 +2,7 @@
 
 pratical implementation of http://efficient.github.io/epaxos/
 instead of integer keys and values it uses strings as keys/values
-networking with grpc/google protocol buffers
+networking with grpc/google and protocol buffers using http2 biderectional streams
 - http://www.grpc.io
 - https://developers.google.com/protocol-buffers/
 

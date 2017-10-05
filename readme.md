@@ -1,13 +1,13 @@
 # Project Name : EPX 
 
-pratical implementation of http://efficient.github.io/epaxos/
+playing with grpc and protobuffers + picking apart http://efficient.github.io/epaxos/
 instead of integer keys and values it uses strings as keys/values
 networking with grpc/google protocol buffers
 - http://www.grpc.io
 - https://developers.google.com/protocol-buffers/
 
 it basically works, still trying to figure out some aspects 
-of epaxos as proposed.
+of epaxos.
 
 the algorithm is exaclty the same as the original (i hope, not established yet)
 , just refactored a little
@@ -53,7 +53,7 @@ on the first run you might see some strange results, i haven't rigged the client
 
 ## Usage
 
-lots of applications, but for now just for playing around with
+playground
 
 ## Contributing
 
